@@ -296,33 +296,34 @@ class Spreadsheet():
                 ]
         })
         
-        # Отправляем новые данные
-        self.service.spreadsheets().values().batchUpdate(spreadsheetId = spreadsheetId, body = {
-            "valueInputOption": "RAW",
-            "data": data_request
-        }).execute() 
+        # Отправление новых данных
+        if len(data_request) > 0:
+            self.service.spreadsheets().values().batchUpdate(spreadsheetId = spreadsheetId, body = {
+                "valueInputOption": "RAW",
+                "data": data_request
+            }).execute() 
                 
-        # Сортировка по фамилии (А -> Я, в лексикографическом порядке)
-        self.service.spreadsheets().batchUpdate(spreadsheetId = spreadsheetId, body =
-        {
-          "requests": [
+            # Сортировка по фамилии (А -> Я, в лексикографическом порядке)
+            self.service.spreadsheets().batchUpdate(spreadsheetId = spreadsheetId, body =
             {
-              "sortRange": {
-                "range": {
-                  "sheetId": sheet["properties"]["sheetId"],
-                  "startRowIndex": 1,
-                  "startColumnIndex": 0,
-                },
-                "sortSpecs": [
-                  {
-                    "dimensionIndex": 0,
-                    "sortOrder": "ASCENDING"
+              "requests": [
+                {
+                  "sortRange": {
+                    "range": {
+                      "sheetId": sheet["properties"]["sheetId"],
+                      "startRowIndex": 1,
+                      "startColumnIndex": 0,
+                    },
+                    "sortSpecs": [
+                      {
+                        "dimensionIndex": 0,
+                        "sortOrder": "ASCENDING"
+                      }
+                    ]
                   }
-                ]
-              }
-            }
-          ]
-        }).execute()
+                }
+              ]
+            }).execute()
      
 if __name__ == "__main__":
     spreadsheet = Spreadsheet()
