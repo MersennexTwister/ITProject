@@ -17,11 +17,11 @@ import pandas as pd
 student_data = "student_data.xlsx" # Имя файла с таблицей
 
 spreadsheetId = '14PjpStDXX_HueWUH2gNHlsd3yzADQ-RcQAZOOOfNcVI' # ID гугл-таблицы
-CREDENTIALS_FILE ='striped-century-332109-4fbbc3b60d84.json'  # Имя файла с закрытым ключом, вы должны подставить свое
-class_list = [5, 6, 7, 8, 9, 10, 11] # список номеров классов
-spreadsheetTitle = "Google API test" # название таблицы
-maxColumnCount = 500 # максимальное кол-во столбцов (т.е. макс. кол-во дней - 1)
-maxRowCount = 50 # максимальное кол-во строк (т.е. макс. кол-во учеников - 1)
+CREDENTIALS_FILE ='striped-century-332109-4fbbc3b60d84.json'  # Имя файла с закрытым ключом
+class_list = [5, 6, 7, 8, 9, 10, 11] # Список номеров классов
+spreadsheetTitle = "Google API test" # Название таблицы
+maxColumnCount = 500 # Максимальное кол-во столбцов (т.е. макс. кол-во дней - 1)
+maxRowCount = 50 # Максимальное кол-во строк (т.е. макс. кол-во учеников - 1)
 
 def is_connected_to_internet(host='http://google.com'):
     '''
@@ -91,6 +91,7 @@ class Spreadsheet():
         spreadsheet = self.service.spreadsheets().get(spreadsheetId=spreadsheetId).execute()
         sheet_list = spreadsheet.get('sheets')
         
+        # Запросы на:
         initialize_requests = [] # Создание недостающих листов
         delete_requests = [] # Удаление лишних (не подходящих по sheetId)
         update_request = [] # Обновление существующих (изменение макс. размера листа)
@@ -138,7 +139,7 @@ class Spreadsheet():
                 class_list_copy.remove(sheet["properties"]["sheetId"])
                 
         
-        # Обновляем (на всякий случай) параметры таблицы
+        # Обновляем параметры таблицы
         initialize_requests.append({
             "updateSpreadsheetProperties": {
                 "properties": {
@@ -312,7 +313,7 @@ class Spreadsheet():
                 ]
         })
         
-        # Отправление новых данных
+        # Отправка новых данных
         if len(data_request) > 0:
             self.service.spreadsheets().values().batchUpdate(spreadsheetId = spreadsheetId, body = {
                 "valueInputOption": "RAW",
