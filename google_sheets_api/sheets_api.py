@@ -2,24 +2,26 @@ import httplib2
 import apiclient.discovery
 from oauth2client.service_account import ServiceAccountCredentials
 import urllib.request
-import datetime
+import pandas as pd
 
 # Настройки #
+    # Таблица с данными об учениках
+    # Формат:
+    # +-----+-------------------------------+-------+
+    # | ID  | ФИО                           | Класс | 
+    # +-----+-------------------------------+-------+
+    # |  1  | Нурматов Умархон Акмалович    |   9   |
+    # +-----+-------------------------------+-------+
+    # |  2  | Кухаренко Семен Александрович |   10  |
+    # +-----+-------------------------------+-------+
+student_data = "student_data.xlsx" # Имя файла с таблицей
+
 spreadsheetId = '14PjpStDXX_HueWUH2gNHlsd3yzADQ-RcQAZOOOfNcVI' # ID гугл-таблицы
 CREDENTIALS_FILE ='striped-century-332109-4fbbc3b60d84.json'  # Имя файла с закрытым ключом, вы должны подставить свое
 class_list = [5, 6, 7, 8, 9, 10, 11] # список номеров классов
 spreadsheetTitle = "Google API test" # название таблицы
 maxColumnCount = 500 # максимальное кол-во столбцов (т.е. макс. кол-во дней - 1)
 maxRowCount = 50 # максимальное кол-во строк (т.е. макс. кол-во учеников - 1)
-
-# Словарь, хранящий данные об учениках
-# Формат - { <id ученика>: [<ФИО>,<класс>], ... }
-id_list = {
-    12: ["Нурматов Умархон Акмалович", 9],
-    13: ["Кухаренко Семен Эннович", 9],
-    14: ["Абрамнко Василий Константинович", 10]
-}
-
 
 def is_connected_to_internet(host='http://google.com'):
     '''
@@ -36,6 +38,7 @@ def is_connected_to_internet(host='http://google.com'):
         return False
 
 class Spreadsheet():
+    
     '''
     Класс-оболочка для ведения электронного журнала оценок в Google Sheets (Google Sheets API) 
     
@@ -56,15 +59,9 @@ class Spreadsheet():
     
     def create_sheet_title(self, class_id):
         '''
-        Генерирует название (не sheetId!) листа
+        Генерирует название листа
         '''
         return str(class_id) + " класс"
-    
-    def create_date(self):
-        return (str(datetime.date.today().day) + 
-                "." + str(datetime.date.today().month) + 
-                "." + str(datetime.date.today().year))
-
 
     def __init__(self):
         ''' 
@@ -73,6 +70,9 @@ class Spreadsheet():
             - обновление параметров существующих листов
             - удаление лишних листов
         '''
+        
+        # Читаем и запоминаем список данных учеников
+        self.id_list = pd.read_excel(student_data)
         
         # Читаем ключи из файла
         credentials = ServiceAccountCredentials.from_json_keyfile_name(
@@ -183,7 +183,7 @@ class Spreadsheet():
                 body = { "requests": update_request}
             ).execute()
     
-    
+
     def put_mark(self, mark_data):
         '''
         Выставление оценки (+)
@@ -203,10 +203,26 @@ class Spreadsheet():
         # Координаты оценки (coordY ∈ {"A", "B", ..., "AA", ... }, coordX ∈ {1, 2, 3 ...})
         coordY, coordX = "0", "0"
         
+        def find_id(_ID):
+            '''
+            Поиск данных ученика по ID
+            
+            Return
+            ------
+                - ФИО (string)
+                - Класс (int)
+            '''
+            
+            for i in range(self.id_list["ID"].max()):
+                    if self.id_list["ID"][i] == _ID:
+                        return self.id_list["ФИО"][i], self.id_list["Класс"][i]
+        
+        student_surname, student_class = find_id(mark_data[3])            
+        
         # Ищем нужный лист (соответсвенно с классом ученика) для дальнейшей работы с ним
         sheet = None
         for _sheet in sheet_list:
-            if _sheet["properties"]["sheetId"] == id_list[mark_data[3]][1]:
+            if _sheet["properties"]["sheetId"] == student_class:
                 sheet = _sheet
                 
                 
@@ -260,7 +276,7 @@ class Spreadsheet():
             coordX = 2
         else:
             for i in range (len(surnames)):
-                if id_list[mark_data[3]][0] == surnames[i][0]: 
+                if student_surname == surnames[i][0]: 
                     coordX = i + 2
                     new_surname_flag = False
                     break
@@ -272,7 +288,7 @@ class Spreadsheet():
                     "range": sheet["properties"]["title"] + "!" + "A" + str(coordX),
                     "majorDimension": "ROWS",
                     "values": [
-                        [id_list[mark_data[3]][0]]
+                        [student_surname]
                     ]
             })
         
@@ -327,5 +343,5 @@ class Spreadsheet():
      
 if __name__ == "__main__":
     spreadsheet = Spreadsheet()
-    mark_data = [13, 9, 2021, 14]
+    mark_data = [13, 9, 2021, 2]
     spreadsheet.put_mark(mark_data)
