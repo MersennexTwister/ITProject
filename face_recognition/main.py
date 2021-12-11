@@ -9,7 +9,7 @@ def clearFile(fileName):
     f.seek(0)
     f.close()
 
-class System:
+class FaceRec:
 
     def __init__(self, path):
         self.workPath = path
@@ -78,6 +78,6 @@ class System:
 
 
 
-sys = System("faces")
+sys = FaceRec("faces")
 sys.startWork()
 print(sys.recogniteTheFace())
