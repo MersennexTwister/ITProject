@@ -1,7 +1,6 @@
 import httplib2
 import apiclient.discovery
 from oauth2client.service_account import ServiceAccountCredentials
-import urllib.request
 import pandas as pd
 
 # Настройки #
@@ -14,28 +13,15 @@ import pandas as pd
     # +-----+-------------------------------+-------+
     # |  2  | Кухаренко Семен Александрович |   10  |
     # +-----+-------------------------------+-------+
-student_data = "student_data.xlsx" # Имя файла с таблицей
-
+    
+STUDENT_DATA = "student_data.xlsx"                             # Имя файла с таблицей
 spreadsheetId = '14PjpStDXX_HueWUH2gNHlsd3yzADQ-RcQAZOOOfNcVI' # ID гугл-таблицы
-CREDENTIALS_FILE ='striped-century-332109-4fbbc3b60d84.json'  # Имя файла с закрытым ключом
-class_list = [5, 6, 7, 8, 9, 10, 11] # Список номеров классов
-spreadsheetTitle = "Google API test" # Название таблицы
-maxColumnCount = 500 # Максимальное кол-во столбцов (т.е. макс. кол-во дней - 1)
-maxRowCount = 50 # Максимальное кол-во строк (т.е. макс. кол-во учеников - 1)
+CREDENTIALS_FILE ='striped-century-332109-4fbbc3b60d84.json'   # Имя файла с закрытым ключом
+CLASS_LIST = [5, 6, 7, 8, 9, 10, 11]                           # Список номеров классов
+SPREADSHEET_TITLE = "Google API test"                          # Название таблицы
+MAX_COLUMN_COUNT = 500                                         # Максимальное кол-во столбцов (т.е. макс. кол-во дней - 1)
+MAX_ROW_COUNT = 50                                             # Максимальное кол-во строк (т.е. макс. кол-во учеников - 1)
 
-def is_connected_to_internet(host='http://google.com'):
-    '''
-    Проверка Интернет-соединения
-
-    host : Сайт, на который пытаемся зайти, string. Дефолт 'http://google.com'.
-        - true - если Интернет-соединение есть
-        - false - нет
-    '''
-    try:
-        urllib.request.urlopen(host) 
-        return True
-    except:
-        return False
 
 class Spreadsheet():
     
@@ -57,7 +43,18 @@ class Spreadsheet():
             - ячейки заполняются либо "", либо цифрами 1, 2, 3 (кол-во +, полученных учеником на уроке)
     '''
     
-    def create_sheet_title(self, class_id):
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    def __to_sheet_range__(self, num):
+        '''
+        Преобразование Y-координаты из численной формы в буквенную,
+        например: 1 -> А, 13 -> M, 500 -> SF
+        '''
+        if num // len(self.alphabet) > 0:
+            return self.alphabet[num // len(self.alphabet) - 1] + self.alphabet[num % len(self.alphabet) - 1]
+        else:
+            return self.alphabet[num - 1]
+    
+    def __create_sheet_title__(self, class_id):
         '''
         Генерирует название листа
         '''
@@ -72,7 +69,7 @@ class Spreadsheet():
         '''
         
         # Читаем и запоминаем список данных учеников
-        self.id_list = pd.read_excel(student_data)
+        self.id_list = pd.read_excel(STUDENT_DATA)
         
         # Читаем ключи из файла
         credentials = ServiceAccountCredentials.from_json_keyfile_name(
@@ -96,19 +93,19 @@ class Spreadsheet():
         delete_requests = [] # Удаление лишних (не подходящих по sheetId)
         update_request = [] # Обновление существующих (изменение макс. размера листа)
         
-        class_list_copy = class_list
+        class_list_copy = CLASS_LIST
             
         for sheet in sheet_list:
             delete_flag = True
-            # Если sheetId соответсвует номеру класса из class_list, опускаем флаг
+            # Если sheetId соответсвует номеру класса из CLASS_LIST, опускаем флаг
             for class_id in class_list_copy: 
                 if sheet["properties"]["sheetId"] == class_id:
                     delete_flag = False
            
             update_flag = True
             # Если макс. кол-во строк и столбцов листа соотв. заданному, опускаем флаг
-            if (sheet["properties"]["gridProperties"]["rowCount"] == maxRowCount 
-                  and sheet["properties"]["gridProperties"]["columnCount"] == maxColumnCount):
+            if (sheet["properties"]["gridProperties"]["rowCount"] == MAX_ROW_COUNT 
+                  and sheet["properties"]["gridProperties"]["columnCount"] == MAX_COLUMN_COUNT):
                 update_flag = False
             
             # Если поднят флаг delete, добавляем лист в delte_request
@@ -128,8 +125,8 @@ class Spreadsheet():
                             "sheetId": sheet["properties"]["sheetId"],
                             "title": sheet["properties"]["title"],
                             "gridProperties": {
-                                "rowCount": maxRowCount,
-                                "columnCount": maxColumnCount
+                                "rowCount": MAX_ROW_COUNT,
+                                "columnCount": MAX_COLUMN_COUNT
                             }
                         },
                         "fields": "*"
@@ -143,7 +140,7 @@ class Spreadsheet():
         initialize_requests.append({
             "updateSpreadsheetProperties": {
                 "properties": {
-                    "title": spreadsheetTitle,
+                    "title": SPREADSHEET_TITLE,
                     "locale": "ru_RU"
                 },
                 "fields": "*"
@@ -152,16 +149,16 @@ class Spreadsheet():
         
         # Создаем новые (недостающие) листы 
         # sheetId (UID листа) = номер класса
-        # Название листа (title) - см. create_sheet_title()
+        # Название листа (title) - см. __create_sheet_title__()
         for class_id in class_list_copy:
             initialize_requests.append({
                     "addSheet": {
                         "properties": {
                            "sheetId": class_id,
-                           "title": self.create_sheet_title(class_id),
+                           "title": self.__create_sheet_title__(class_id),
                            "gridProperties": {
-                               "columnCount": maxColumnCount,
-                               "rowCount": maxRowCount
+                               "columnCount": MAX_COLUMN_COUNT,
+                               "rowCount": MAX_ROW_COUNT
                            }
                      }
                 }
@@ -183,8 +180,15 @@ class Spreadsheet():
                 spreadsheetId=spreadsheetId,
                 body = { "requests": update_request}
             ).execute()
+            
+        self.max_column_count_conv = self.__to_sheet_range__(MAX_COLUMN_COUNT)
     
 
+    # Массив с новыми данными
+    data_request = []
+    # Параметры обновления листов
+    sheet_list_updated = []
+    
     def put_mark(self, mark_data):
         '''
         Выставление оценки (+)
@@ -192,11 +196,8 @@ class Spreadsheet():
         Parameters
         ----------
         mark_data : list
-            Формат: [<день>,<месяц>,<год>,<id ученика>].
+            Формат: [<ДД.ММ.ГГ>,<id ученика>].
         '''
-        
-        # Массив с новыми данными
-        data_request = []
         
         # Получаем список листов в таблице
         sheet_list = self.service.spreadsheets().get(spreadsheetId=spreadsheetId).execute().get('sheets')
@@ -218,7 +219,7 @@ class Spreadsheet():
                     if self.id_list["ID"][i] == _ID:
                         return self.id_list["ФИО"][i], self.id_list["Класс"][i]
         
-        student_surname, student_class = find_id(mark_data[3])            
+        student_surname, student_class = find_id(mark_data[1])            
         
         # Ищем нужный лист (соответсвенно с классом ученика) для дальнейшей работы с ним
         sheet = None
@@ -226,19 +227,6 @@ class Spreadsheet():
             if _sheet["properties"]["sheetId"] == student_class:
                 sheet = _sheet
                 
-                
-        def to_sheet_range(num):
-            '''
-            Преобразование Y-координаты из численной формы в буквенную,
-            например: 1 -> А, 13 -> M, 500 -> SF
-            '''
-            alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-            if num // len(alphabet) > 0:
-                return alphabet[num // len(alphabet) - 1] + alphabet[num % len(alphabet) - 1]
-            else:
-                return alphabet[num - 1]
-                
-        _maxColumnCount = to_sheet_range(maxColumnCount)
         
         # Дата #
         new_date_flag = True
@@ -246,23 +234,23 @@ class Spreadsheet():
         try:
             dates = self.service.spreadsheets().values().get(
                         spreadsheetId = spreadsheetId, 
-                        range = sheet["properties"]["title"] + "!" + "B1:" + _maxColumnCount + "1"
+                        range = sheet["properties"]["title"] + "!" + "B1:" + self.max_column_count_conv + "1"
                         ).execute()["values"][0]
         except KeyError:
             coordY = 2   
         else:
-            if dates[-1] == (str(mark_data[0]) + "." + str(mark_data[1]) + "." + str(mark_data[2])):
+            if dates[-1] == mark_data[0]:
                 coordY = len(dates) + 1
                 new_date_flag = False
             else:
                 coordY = len(dates) + 2
         
         if new_date_flag:
-            data_request.append({
-                    "range": sheet["properties"]["title"] + "!" + to_sheet_range(coordY) + "1",
+            self.data_request.append({
+                    "range": sheet["properties"]["title"] + "!" + self.__to_sheet_range__(coordY) + "1",
                     "majorDimension": "COLUMNS",
                     "values": [
-                        [str(mark_data[0]) + "." + str(mark_data[1]) + "." + str(mark_data[2])]
+                        [mark_data[0]]
                     ]
                 })
         
@@ -285,7 +273,7 @@ class Spreadsheet():
                 coordX = len(surnames) + 2
         
         if(new_surname_flag):
-            data_request.append({
+            self.data_request.append({
                     "range": sheet["properties"]["title"] + "!" + "A" + str(coordX),
                     "majorDimension": "ROWS",
                     "values": [
@@ -298,15 +286,15 @@ class Spreadsheet():
         try:
             previous_mark = self.service.spreadsheets().values().get(
                 spreadsheetId = spreadsheetId, 
-                range = sheet["properties"]["title"] + "!" + to_sheet_range(coordY) + str(coordX)
+                range = sheet["properties"]["title"] + "!" + self.__to_sheet_range__(coordY) + str(coordX)
                 ).execute()["values"][0][0]
         except KeyError:
             pass
         else:
             new_mark = int(previous_mark) + 1
             
-        data_request.append({
-                "range": sheet["properties"]["title"] + "!" + to_sheet_range(coordY) + str(coordX),
+        self.data_request.append({
+                "range": sheet["properties"]["title"] + "!" + self.__to_sheet_range__(coordY) + str(coordX),
                 "majorDimension": "ROWS",
                 "values": [
                     [str(new_mark)]
@@ -314,17 +302,16 @@ class Spreadsheet():
         })
         
         # Отправка новых данных
-        if len(data_request) > 0:
+        if len(self.data_request) > 0:
             self.service.spreadsheets().values().batchUpdate(spreadsheetId = spreadsheetId, body = {
                 "valueInputOption": "RAW",
-                "data": data_request
+                "data": self.data_request
             }).execute() 
                 
             # Сортировка по фамилии (А -> Я, в лексикографическом порядке)
             self.service.spreadsheets().batchUpdate(spreadsheetId = spreadsheetId, body =
             {
-              "requests": [
-                {
+              "requests": [{
                   "sortRange": {
                     "range": {
                       "sheetId": sheet["properties"]["sheetId"],
@@ -336,13 +323,6 @@ class Spreadsheet():
                         "dimensionIndex": 0,
                         "sortOrder": "ASCENDING"
                       }
-                    ]
-                  }
-                }
-              ]
+                    ]}
+                }]
             }).execute()
-     
-if __name__ == "__main__":
-    spreadsheet = Spreadsheet()
-    mark_data = [13, 9, 2021, 2]
-    spreadsheet.put_mark(mark_data)
