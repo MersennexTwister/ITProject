@@ -14,9 +14,9 @@ import pandas as pd
     # |  2  | Кухаренко Семен Александрович |   10  |
     # +-----+-------------------------------+-------+
     
-STUDENT_DATA = "student_data.xlsx"                             # Имя файла с таблицей
+STUDENT_DATA = 'resources/student_data.xlsx'                             # Имя файла с таблицей
 spreadsheetId = '14PjpStDXX_HueWUH2gNHlsd3yzADQ-RcQAZOOOfNcVI' # ID гугл-таблицы
-CREDENTIALS_FILE ='striped-century-332109-4fbbc3b60d84.json'   # Имя файла с закрытым ключом
+CREDENTIALS_FILE ='resources/striped-century-332109-4fbbc3b60d84.json'   # Имя файла с закрытым ключом
 CLASS_LIST = [5, 6, 7, 8, 9, 10, 11]                           # Список номеров классов
 SPREADSHEET_TITLE = "Google API test"                          # Название таблицы
 MAX_COLUMN_COUNT = 500                                         # Максимальное кол-во столбцов (т.е. макс. кол-во дней - 1)

@@ -78,6 +78,6 @@ class FaceRec:
 
 
 
-sys = FaceRec("faces")
+sys = FaceRec("resources/faces")
 sys.startWork()
 print(sys.recogniteTheFace())

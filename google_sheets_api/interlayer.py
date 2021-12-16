@@ -1,11 +1,11 @@
 import pandas as pd
-from sheets_api import Spreadsheet
+from spreadsheet import Spreadsheet
 import urllib.request
 
 # Название файла с локальной таблицей
-LOCAL_MARK_DATA = "local_mdata.xlsx"
+LOCAL_MARK_DATA = "resources/local_mdata.xlsx"
 
-class Interlayer:
+class Interlayer:   
     '''
     Промежуточный модуль между CV и GoogleSheets   
     
