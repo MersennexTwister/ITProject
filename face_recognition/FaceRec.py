@@ -74,10 +74,3 @@ class FaceRec:
                 mn = dist
                 k = key
             return key
-
-
-
-
-sys = FaceRec("resources/faces")
-sys.startWork()
-print(sys.recogniteTheFace())
