@@ -13,7 +13,6 @@ class FaceRec:
 
     def __init__(self, path):
         self.workPath = path
-        self.studentsDict = {}
 
     def startWork(self):
         imagePaths = list(paths.list_images(self.workPath))
