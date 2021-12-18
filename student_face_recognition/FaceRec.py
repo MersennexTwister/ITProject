@@ -39,9 +39,8 @@ class FaceRec:
         video_capture.release()
         faces = face_recognition.face_locations(rgb)
         encodings = face_recognition.face_encodings(rgb)
-        names = []
         flist = {}
-        for encoding in encodings:
+        for (encoding, s_faceLoc) in zip(encodings, faces):
             matches = face_recognition.compare_faces(data["encodings"], encoding)
             name = "Unknown"
             if True in matches:
@@ -51,11 +50,8 @@ class FaceRec:
                     name = data["names"][i]
                     counts[name] = counts.get(name, 0) + 1
                     name = max(counts, key=counts.get)
-                names.append(name)
-
-        for (s_faceLoc, name) in zip(faces, names):
-            x1, y1, x2, y2 = s_faceLoc[3], s_faceLoc[0], s_faceLoc[1], s_faceLoc[2]
-            flist[name] = [x1, y1, x2, y2]
+                x1, y1, x2, y2 = s_faceLoc[3], s_faceLoc[0], s_faceLoc[1], s_faceLoc[2]
+                flist[name] = [x1, y1, x2, y2]
 
         id = self.getGoodFace(flist, rgb)
         return id
