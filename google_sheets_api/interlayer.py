@@ -1,4 +1,5 @@
 import pandas as pd
+from student_face_recognition.FaceRec import FaceRec
 from spreadsheet import Spreadsheet
 import urllib.request
 
@@ -82,5 +83,6 @@ class Interlayer:
     
 if __name__ == "__main__":
     interlayer = Interlayer()
-    interlayer.put_mark("01.12.2021", 1)
-    interlayer.put_mark("01.12.2021", 2)
+    fr = FaceRec('../resourses/faces')
+    fr.startWork()
+    interlayer.put_mark("01.12.2021", fr.recogniteTheFace())
