@@ -1,10 +1,11 @@
 import pandas as pd
-from student_face_recognition.FaceRec import FaceRec
+import cv2
+from google_sheets_api.FaceRec import FaceRec
 from spreadsheet import Spreadsheet
 import urllib.request
 
 # Название файла с локальной таблицей
-LOCAL_MARK_DATA = "resources/local_mdata.xlsx"
+LOCAL_MARK_DATA = "local_mdata.xlsx"
 
 class Interlayer:   
     '''
@@ -52,12 +53,13 @@ class Interlayer:
         # +--------------+----+
         # |  <ДД.ММ.ГГ>  | 0  |
         # +--------------+----+
-        # |  <ДД.ММ.ГГ>  | 1  |
+        # |  <ДД.ММ.ГГ>  | 2  |
         # +--------------+----+
         self.local_mdata = pd.read_excel(LOCAL_MARK_DATA)
     
 
     def put_mark(self, date, ID):
+        print(ID)
         # Соединение с GoogleSheets для работы с интернет-таблицей
         self.__connect_to_google_sheets__()
         
@@ -83,6 +85,9 @@ class Interlayer:
     
 if __name__ == "__main__":
     interlayer = Interlayer()
-    fr = FaceRec('../resourses/faces')
+    fr = FaceRec('../google_sheets_api/faces')
     fr.startWork()
-    interlayer.put_mark("01.12.2021", fr.recogniteTheFace())
+    while True:
+        print("Ready!")
+        cv2.waitKey(0)
+        interlayer.put_mark("01.12.2021", fr.recogniteTheFace())

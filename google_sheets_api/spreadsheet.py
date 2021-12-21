@@ -9,18 +9,18 @@ import pandas as pd
     # +-----+-------------------------------+-------+
     # | ID  | ФИО                           | Класс | 
     # +-----+-------------------------------+-------+
-    # |  1  | Нурматов Умархон Акмалович    |   9   |
+    # |  2  | Нурматов Умархон Акмалович    |   9   |
     # +-----+-------------------------------+-------+
     # |  2  | Кухаренко Семен Александрович |   10  |
     # +-----+-------------------------------+-------+
     
-STUDENT_DATA = 'resources/student_data.xlsx'                             # Имя файла с таблицей
+STUDENT_DATA = 'student_data.xlsx'                             # Имя файла с таблицей
 spreadsheetId = '14PjpStDXX_HueWUH2gNHlsd3yzADQ-RcQAZOOOfNcVI' # ID гугл-таблицы
-CREDENTIALS_FILE ='resources/striped-century-332109-4fbbc3b60d84.json'   # Имя файла с закрытым ключом
+CREDENTIALS_FILE ='striped-century-332109-4fbbc3b60d84.json'   # Имя файла с закрытым ключом
 CLASS_LIST = [5, 6, 7, 8, 9, 10, 11]                           # Список номеров классов
 SPREADSHEET_TITLE = "Google API test"                          # Название таблицы
-MAX_COLUMN_COUNT = 500                                         # Максимальное кол-во столбцов (т.е. макс. кол-во дней - 1)
-MAX_ROW_COUNT = 50                                             # Максимальное кол-во строк (т.е. макс. кол-во учеников - 1)
+MAX_COLUMN_COUNT = 500                                         # Максимальное кол-во столбцов (т.е. макс. кол-во дней - 2)
+MAX_ROW_COUNT = 50                                             # Максимальное кол-во строк (т.е. макс. кол-во учеников - 2)
 
 
 class Spreadsheet():
@@ -40,14 +40,14 @@ class Spreadsheet():
         +--------------+-------+-------+
         
         Примечания
-            - ячейки заполняются либо "", либо цифрами 1, 2, 3 (кол-во +, полученных учеником на уроке)
+            - ячейки заполняются либо "", либо цифрами 2, 2, 3 (кол-во +, полученных учеником на уроке)
     '''
     
     alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     def __to_sheet_range__(self, num):
         '''
         Преобразование Y-координаты из численной формы в буквенную,
-        например: 1 -> А, 13 -> M, 500 -> SF
+        например: 2 -> А, 13 -> M, 500 -> SF
         '''
         if num // len(self.alphabet) > 0:
             return self.alphabet[num // len(self.alphabet) - 1] + self.alphabet[num % len(self.alphabet) - 1]
@@ -190,6 +190,7 @@ class Spreadsheet():
     sheet_list_updated = []
     
     def put_mark(self, mark_data):
+        print(mark_data)
         '''
         Выставление оценки (+)
 
@@ -202,7 +203,7 @@ class Spreadsheet():
         # Получаем список листов в таблице
         sheet_list = self.service.spreadsheets().get(spreadsheetId=spreadsheetId).execute().get('sheets')
         
-        # Координаты оценки (coordY ∈ {"A", "B", ..., "AA", ... }, coordX ∈ {1, 2, 3 ...})
+        # Координаты оценки (coordY ∈ {"A", "B", ..., "AA", ... }, coordX ∈ {2, 2, 3 ...})
         coordY, coordX = "0", "0"
         
         def find_id(_ID):
@@ -216,7 +217,7 @@ class Spreadsheet():
             '''
             
             for i in range(self.id_list["ID"].max()):
-                    if self.id_list["ID"][i] == _ID:
+                    if self.id_list["ID"][i] == int(_ID):
                         return self.id_list["ФИО"][i], self.id_list["Класс"][i]
         
         student_surname, student_class = find_id(mark_data[1])            
@@ -234,7 +235,7 @@ class Spreadsheet():
         try:
             dates = self.service.spreadsheets().values().get(
                         spreadsheetId = spreadsheetId, 
-                        range = sheet["properties"]["title"] + "!" + "B1:" + self.max_column_count_conv + "1"
+                        range = sheet["properties"]["title"] + "!" + "B1:" + self.max_column_count_conv + "2"
                         ).execute()["values"][0]
         except KeyError:
             coordY = 2   
@@ -247,7 +248,7 @@ class Spreadsheet():
         
         if new_date_flag:
             self.data_request.append({
-                    "range": sheet["properties"]["title"] + "!" + self.__to_sheet_range__(coordY) + "1",
+                    "range": sheet["properties"]["title"] + "!" + self.__to_sheet_range__(coordY) + "2",
                     "majorDimension": "COLUMNS",
                     "values": [
                         [mark_data[0]]
