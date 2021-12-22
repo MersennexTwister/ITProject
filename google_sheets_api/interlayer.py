@@ -89,5 +89,8 @@ if __name__ == "__main__":
     fr.startWork()
     while True:
         print("Ready!")
-        cv2.waitKey(0)
-        interlayer.put_mark("01.12.2021", fr.recogniteTheFace())
+        input("Press Enter to continue...")
+        try:
+            interlayer.put_mark("01.12.2021", fr.recogniteTheFace())
+        except:
+            print("Лицо не распознано!")
