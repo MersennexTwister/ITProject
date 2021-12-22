@@ -67,4 +67,4 @@ class FaceRec:
             if mn > dist:
                 mn = dist
                 k = key
-            return key
+        return k
