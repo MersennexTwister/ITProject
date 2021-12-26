@@ -14,7 +14,7 @@ HARM - Handheld Automatic Rating SysteM - переносная системы а
 
 ### FaceRec
 
-Вся работа по распознаванию лиц идёт в классе FaceRec. Подробнее face_recognition/faceRec.py
+Вся работа по распознаванию лиц идёт в классе FaceRec
 
 В нём 3 функции:   
 ```
@@ -33,7 +33,7 @@ HARM - Handheld Automatic Rating SysteM - переносная системы а
 
 ### Spreadsheet
 
-Вся работа по отправке данных в Google-таблицу происходит здесь. Подробнее google_sheets_api/spreadsheet.py
+Вся работа по отправке данных в Google-таблицу происходит здесь
 
 Функции:
 ```
@@ -47,7 +47,7 @@ HARM - Handheld Automatic Rating SysteM - переносная системы а
 
 ### Interlayer
 
-Промежуточный слой между FaceRec и Spreadsheet. Подробнее google_sheets_api/interlayer.py
+Промежуточный слой между FaceRec и Spreadsheet
 
 Функции:
 ```
