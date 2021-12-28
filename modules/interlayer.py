@@ -1,6 +1,6 @@
 import pandas as pd
 import cv2
-from google_sheets_api.FaceRec import FaceRec
+from modules.FaceRec import FaceRec
 from spreadsheet import Spreadsheet
 import urllib.request
 
@@ -85,7 +85,7 @@ class Interlayer:
     
 if __name__ == "__main__":
     interlayer = Interlayer()
-    fr = FaceRec('../google_sheets_api/faces')
+    fr = FaceRec('../modules/faces')
     fr.startWork()
     while True:
         print("Ready!")
