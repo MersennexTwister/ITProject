@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from flask import Flask, render_template, url_for, request, redirect
 from flask_sqlalchemy import SQLAlchemy
@@ -116,11 +117,11 @@ def lk(id):
     if request.method == "POST":
         pass
     conn, cur = get_connection('data.db')
-    ask = 'SELECT name FROM Student WHERE teacher_id = ' + str(id)
+    ask = 'SELECT name, id FROM Student WHERE teacher_id = ' + str(id)
     res = cur.execute(ask).fetchall()
     st = []
     for i in res:
-        st.append(i[0])
+        st.append([i[0], '/user=' + str(id) + '/delete_student/student_id=' + str(i[1])])
     ask = 'SELECT name FROM Teacher WHERE id = ' + str(id)
     name = cur.execute(ask).fetchone()[0]
     print(name)
@@ -156,6 +157,23 @@ def add_student(id):
             return 'При доабвлении ученика произошла ошибка'
 
     return render_template('add_student.html')
+
+
+@app.route('/user=<int:id>/delete_student/student_id=<int:st_id>', methods=["POST", "GET"])
+def delete_student(id, st_id):
+    if id != user_id:
+        return 'Нет доступа'
+    if request.method == "POST":
+        conn, cur = get_connection('data.db')
+        ask = 'DELETE FROM Student WHERE id = ' + str(st_id)
+        cur.execute(ask)
+        conn.commit()
+        shutil.rmtree('faces/' + str(st_id))
+        return redirect('/user=' + str(id) + '/lk')
+    conn, cur = get_connection('data.db')
+    ask = "SELECT name FROM Student WHERE id = " + str(st_id)
+    name = cur.execute(ask).fetchone()[0]
+    return render_template('delete_student.html', name=name)
 
 
 if __name__ == "__main__":

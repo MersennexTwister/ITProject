@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block style %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/add_student.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/delete_student.css') }}">
 {% endblock %}
 
 {% block title %}Как работает{% endblock %}
@@ -50,12 +50,9 @@
 {% endblock %}
 
 {% block body %}
-<h1>Добавить ученика</h1>
+<h1>Удалить ученика</h1>
+<p>Имя: {{ name }}</p>
 <form method="post" enctype = "multipart/form-data">
-  <input type="text" name="name" id="name" class="form-control" placeholder="Имя ученика"><br>
-  <input name="photo1" id="photo1" type="file" class="form-control" placeholder="Фото ученика 1"><br>
-  <input name="photo2" id="photo2" type="file" class="form-control" placeholder="Фото ученика 2"><br>
-  <input name="photo3" id="photo3" type="file" class="form-control" placeholder="Фото ученика 3"><br>
-  <button type="submit" class="btn btn-success">Добавить</button>
+  <button type="submit" class="btn btn-success">Удалить</button>
 </form>
 {% endblock %}

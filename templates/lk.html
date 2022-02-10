@@ -55,7 +55,7 @@
 <p>Ученики:</p>
 <ul>
     {% for el in students %}
-    <li>{{ el }}</li>
+    <li>{{ el[0] }} <a href={{ el[1] }}>Удалить</a></li>
     {% endfor %}
 </ul><br>
 <a href={{ link }} class="address">Добавить ученика</a>
