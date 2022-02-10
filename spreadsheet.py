@@ -1,27 +1,15 @@
 import httplib2
 import apiclient.discovery
 from oauth2client.service_account import ServiceAccountCredentials
-import pandas as pd
+import sqlite3
 
-# Настройки #
-# Таблица с данными об учениках
-# Формат:
-# +-----+-------------------------------+-------+
-# | ID  | ФИО                           | Класс |
-# +-----+-------------------------------+-------+
-# |  2  | Нурматов Умархон Акмалович    |   9   |
-# +-----+-------------------------------+-------+
-# |  2  | Кухаренко Семен Александрович |   10  |
-# +-----+-------------------------------+-------+
-
-STUDENT_DATA = 'student_data.xlsx'  # Имя файла с таблицей
+DATABASE = 'data.db'                                            # Имя файла с таблицей
 spreadsheetId = '14PjpStDXX_HueWUH2gNHlsd3yzADQ-RcQAZOOOfNcVI'  # ID гугл-таблицы
-CREDENTIALS_FILE = 'striped-century-332109-4fbbc3b60d84.json'  # Имя файла с закрытым ключом
-CLASS_LIST = [5, 6, 7, 8, 9, 10, 11]  # Список номеров классов
-SPREADSHEET_TITLE = "Google API test"  # Название таблицы
-MAX_COLUMN_COUNT = 500  # Максимальное кол-во столбцов (т.е. макс. кол-во дней - 2)
-MAX_ROW_COUNT = 50  # Максимальное кол-во строк (т.е. макс. кол-во учеников - 2)
-
+CREDENTIALS_FILE = 'striped-century-332109-4fbbc3b60d84.json'   # Имя файла с закрытым ключом
+CLASS_LIST = [5, 6, 7, 8, 9, 10, 11]                            # Список номеров классов
+SPREADSHEET_TITLE = "Google API test"                           # Название таблицы
+MAX_COLUMN_COUNT = 500                                          # Максимальное кол-во столбцов (т.е. макс. кол-во дней - 2)
+MAX_ROW_COUNT = 50                                              # Максимальное кол-во строк (т.е. макс. кол-во учеников - 2)
 
 class Spreadsheet():
     '''
@@ -68,8 +56,9 @@ class Spreadsheet():
             - удаление лишних листов
         '''
 
-        # Читаем и запоминаем список данных учеников
-        self.id_list = pd.read_excel(STUDENT_DATA)
+        # Настравиваем общение с базой данных
+        self.conn = sqlite3.connect(DATABASE)
+        self.cursor = self.conn.cursor()
 
         # Читаем ключи из файла
         credentials = ServiceAccountCredentials.from_json_keyfile_name(
@@ -213,10 +202,9 @@ class Spreadsheet():
                 - ФИО (string)
                 - Класс (int)
             '''
-
-            for i in range(self.id_list["ID"].max()):
-                if self.id_list["ID"][i] == int(_ID):
-                    return self.id_list["ФИО"][i], self.id_list["Класс"][i]
+            _id_ = self.cursor.execute("SELECT name FROM student where id = " + str(_ID)).fetchone()
+            _class_ = self.cursor.execute("SELECT class FROM student where id = " + str(_ID)).fetchone()
+            return _id_[0], int(_class_[0])
 
         student_surname, student_class = find_id(mark_data[1])
 
@@ -324,3 +312,7 @@ class Spreadsheet():
                         ]}
                 }]
             }).execute()
+
+if __name__ == "__main__":
+    sp = Spreadsheet()
+    sp.put_mark(['12.01.2012', 1])

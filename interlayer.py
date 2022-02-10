@@ -1,5 +1,5 @@
 import cv2
-from FaceRec import FaceRec
+from faceRec import FaceRec
 from spreadsheet import Spreadsheet
 
 if __name__ == "__main__":
