@@ -134,6 +134,10 @@ def add_student(id):
     if request.method == "POST":
         name = request.form['name']
         conn, cur = get_connection('data.db')
+        ask = "SELECT COUNT(id) FROM Student WHERE name = '" + name + "' AND teacher_id = " + str(id)
+        inf = cur.execute(ask).fetchone()[0]
+        if inf > 0:
+            return 'Ученик уже есть у вас в классе!'
         photo1, photo2, photo3 = request.files['photo1'], request.files['photo2'], request.files['photo3']
         ask = "SELECT COUNT(id) FROM Student"
         inf = cur.execute(ask).fetchone()[0] + 1
