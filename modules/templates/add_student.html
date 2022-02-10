@@ -51,9 +51,11 @@
 
 {% block body %}
 <h1>Добавить ученика</h1>
-<form method="post">
+<form method="post" enctype = "multipart/form-data">
   <input type="text" name="name" id="name" class="form-control" placeholder="Имя ученика"><br>
-  <input name="photo" id="photo" type="file" class="form-control" placeholder="Фото ученика 1" multiple><br>
+  <input name="photo1" id="photo1" type="file" class="form-control" placeholder="Фото ученика 1"><br>
+  <input name="photo2" id="photo2" type="file" class="form-control" placeholder="Фото ученика 2"><br>
+  <input name="photo3" id="photo3" type="file" class="form-control" placeholder="Фото ученика 3"><br>
   <button type="submit" class="btn btn-success">Добавить</button>
 </form>
 {% endblock %}

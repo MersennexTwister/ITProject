@@ -1,6 +1,10 @@
+import os
+
 from flask import Flask, render_template, url_for, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 import sqlite3 as sql
+
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
@@ -11,6 +15,21 @@ def get_connection(db_name):
     conn = sql.connect(db_name)
     cur = conn.cursor()
     return conn, cur
+
+
+def set_path(id):
+
+
+    APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+    UPLOAD_FOLD = 'faces\\' + str(id)
+
+    if not os.path.isdir(UPLOAD_FOLD):
+        os.chdir('faces')
+        os.mkdir(str(id))
+        os.chdir('..')
+
+    UPLOAD_FOLDER = os.path.join(APP_ROOT, UPLOAD_FOLD)
+    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
 class Teacher(db.Model):
@@ -115,8 +134,13 @@ def add_student(id):
     if request.method == "POST":
         name = request.form['name']
         conn, cur = get_connection('data.db')
-        ask = "SELECT COUNT(id) FROM Student WHERE teacher_id = " + str(id)
+        photo1, photo2, photo3 = request.files['photo1'], request.files['photo2'], request.files['photo3']
+        ask = "SELECT COUNT(id) FROM Student"
         inf = cur.execute(ask).fetchone()[0] + 1
+        set_path(inf)
+        photo1.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(photo1.filename)))
+        photo2.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(photo2.filename)))
+        photo3.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(photo3.filename)))
 
         t = Student(id=inf, name=name, teacher_id=id)
 
