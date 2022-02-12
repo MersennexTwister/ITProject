@@ -7,10 +7,13 @@ import sqlite3 as sql
 
 from werkzeug.utils import secure_filename
 
+from interlayer import main_func, start
+
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+fr, s = start()
 
 def get_connection(db_name):
     conn = sql.connect(db_name)
@@ -110,12 +113,16 @@ def enter():
     return render_template("enter.html")
 
 
-@app.route('/user=<int:id>/lk')
+@app.route('/user=<int:id>/lk', methods=["POST", "GET"])
 def lk(id):
     if id != user_id:
         return "Нет доступа"
     if request.method == "POST":
-        pass
+        face = main_func(fr, s)
+        if face == -1:
+            return redirect('/user=' + str(id) + '/error_page')
+        return redirect('/user=' + str(id) + '/success_page/student_id=' + str(face))
+
     conn, cur = get_connection('data.db')
     ask = 'SELECT name, id FROM Student WHERE teacher_id = ' + str(id)
     res = cur.execute(ask).fetchall()
@@ -174,6 +181,23 @@ def delete_student(id, st_id):
     ask = "SELECT name FROM Student WHERE id = " + str(st_id)
     name = cur.execute(ask).fetchone()[0]
     return render_template('delete_student.html', name=name)
+
+
+@app.route('/user=<int:id>/success_page/student_id=<int:st_id>')
+def success_page(id, st_id):
+    if id != user_id:
+        return 'Нет доступа'
+    ask = "SELECT name FROM Student WHERE id = " + str(st_id)
+    conn, cur = get_connection('data.db')
+    name = cur.execute(ask).fetchone()[0]
+    return render_template('success_page.html', name=name, link="/user=" + str(id) + "/lk")
+
+
+@app.route('/user=<int:id>/error_page')
+def error_page(id):
+    if id != user_id:
+        return 'Нет доступа'
+    return render_template('error_page.html', link="/user=" + str(id) + "/lk")
 
 
 if __name__ == "__main__":

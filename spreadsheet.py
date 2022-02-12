@@ -57,8 +57,7 @@ class Spreadsheet():
         '''
 
         # Настравиваем общение с базой данных
-        self.conn = sqlite3.connect(DATABASE)
-        self.cursor = self.conn.cursor()
+
 
         # Читаем ключи из файла
         credentials = ServiceAccountCredentials.from_json_keyfile_name(
@@ -202,8 +201,10 @@ class Spreadsheet():
                 - ФИО (string)
                 - Класс (int)
             '''
-            _id_ = self.cursor.execute("SELECT name FROM student where id = " + str(_ID)).fetchone()
-            _class_ = self.cursor.execute("SELECT class FROM student where id = " + str(_ID)).fetchone()
+            conn = sqlite3.connect(DATABASE)
+            cursor = conn.cursor()
+            _id_ = cursor.execute("SELECT name FROM student where id = " + str(_ID)).fetchone()
+            _class_ = cursor.execute("SELECT class FROM student where id = " + str(_ID)).fetchone()
             return _id_[0], int(_class_[0])
 
         student_surname, student_class = find_id(mark_data[1])

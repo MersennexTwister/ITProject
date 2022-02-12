@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 
 {% block style %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/register.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/success_page.css') }}">
 {% endblock %}
 
-{% block title %}Регистрация{% endblock %}
+{% block title %}Успешно!{% endblock %}
 
 {% block bar %}
 <div id="side-bar" class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark" style="width: 280px;">
@@ -33,7 +33,7 @@
         </a>
       </li>
         <li style="margin-top: 30px;">
-        <a href="/register" class="nav-link active">
+        <a href="/register" class="nav-link text-white">
           <svg class="bi me-2" width="16" height="20"><use xlink:href="#table"></use></svg>
           Зарегистрироваться
         </a>
@@ -50,11 +50,7 @@
 {% endblock %}
 
 {% block body %}
-<h1>Создать учётную запись</h1>
-<form method="post">
-  <input type="text" name="name" id="name" class="form-control" placeholder="Ваше имя"><br>
-  <input type="text" name="login" id="login" class="form-control" placeholder="Придумайте логин"><br>
-  <input type="text" name="password" id="password" class="form-control" placeholder="Придумайте пароль"><br>
-  <button type="submit" class="btn btn-success">Зарегистрироваться</button>
-</form>
+<h1>Успешно!</h1>
+<p>Ученику по имени <b>{{ name }}</b> была успешно поставлена оценка.</p>
+<a class="redirect" href={{ link }}>Вернуться в личный кабинет</a>
 {% endblock %}
