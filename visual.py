@@ -25,7 +25,7 @@ def set_path(id):
 
 
     APP_ROOT = os.path.dirname(os.path.abspath(__file__))
-    UPLOAD_FOLD = 'faces\\' + str(id)
+    UPLOAD_FOLD = 'faces/' + str(id)
 
     if not os.path.isdir(UPLOAD_FOLD):
         os.chdir('faces')
@@ -43,7 +43,7 @@ class Teacher(db.Model):
     password = db.Column(db.String(100), nullable=False)
 
     def __repr__(self):
-        return '<Teacher %r>' % self.id
+        return '<teacher %r>' % self.id
 
 class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -51,7 +51,7 @@ class Student(db.Model):
     teacher_id = db.Column(db.Integer)
 
     def __repr__(self):
-        return '<Student %r>' % self.id
+        return '<student %r>' % self.id
 
 
 @app.route("/")
@@ -100,7 +100,7 @@ def enter():
         conn, cur = get_connection('data.db')
         login = request.form['login']
         password = request.form['password']
-        ask = 'SELECT id FROM Teacher WHERE login = "' + login + '" AND password = "' + password + '"'
+        ask = 'SELECT id FROM teacher WHERE login = "' + login + '" AND password = "' + password + '"'
         print(ask)
         ok = cur.execute(ask).fetchall()
         try:
@@ -124,12 +124,12 @@ def lk(id):
         return redirect('/user=' + str(id) + '/success_page/student_id=' + str(face))
 
     conn, cur = get_connection('data.db')
-    ask = 'SELECT name, id FROM Student WHERE teacher_id = ' + str(id)
+    ask = 'SELECT name, id FROM student WHERE teacher_id = ' + str(id)
     res = cur.execute(ask).fetchall()
     st = []
     for i in res:
         st.append([i[0], '/user=' + str(id) + '/delete_student/student_id=' + str(i[1])])
-    ask = 'SELECT name FROM Teacher WHERE id = ' + str(id)
+    ask = 'SELECT name FROM teacher WHERE id = ' + str(id)
     name = cur.execute(ask).fetchone()[0]
     print(name)
     return render_template('lk.html', name=name, students=st, link="/user=" + str(id) + "/add_student")
@@ -142,12 +142,12 @@ def add_student(id):
     if request.method == "POST":
         name = request.form['name']
         conn, cur = get_connection('data.db')
-        ask = "SELECT COUNT(id) FROM Student WHERE name = '" + name + "' AND teacher_id = " + str(id)
+        ask = "SELECT COUNT(id) FROM student WHERE name = '" + name + "' AND teacher_id = " + str(id)
         inf = cur.execute(ask).fetchone()[0]
         if inf > 0:
             return 'Ученик уже есть у вас в классе!'
         photo1, photo2, photo3 = request.files['photo1'], request.files['photo2'], request.files['photo3']
-        ask = "SELECT COUNT(id) FROM Student"
+        ask = "SELECT COUNT(id) FROM student"
         inf = cur.execute(ask).fetchone()[0] + 1
         set_path(inf)
         photo1.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(photo1.filename)))
@@ -172,13 +172,13 @@ def delete_student(id, st_id):
         return 'Нет доступа'
     if request.method == "POST":
         conn, cur = get_connection('data.db')
-        ask = 'DELETE FROM Student WHERE id = ' + str(st_id)
+        ask = 'DELETE FROM student WHERE id = ' + str(st_id)
         cur.execute(ask)
         conn.commit()
         shutil.rmtree('faces/' + str(st_id))
         return redirect('/user=' + str(id) + '/lk')
     conn, cur = get_connection('data.db')
-    ask = "SELECT name FROM Student WHERE id = " + str(st_id)
+    ask = "SELECT name FROM student WHERE id = " + str(st_id)
     name = cur.execute(ask).fetchone()[0]
     return render_template('delete_student.html', name=name)
 
@@ -187,7 +187,7 @@ def delete_student(id, st_id):
 def success_page(id, st_id):
     if id != user_id:
         return 'Нет доступа'
-    ask = "SELECT name FROM Student WHERE id = " + str(st_id)
+    ask = "SELECT name FROM student WHERE id = " + str(st_id)
     conn, cur = get_connection('data.db')
     name = cur.execute(ask).fetchone()[0]
     return render_template('success_page.html', name=name, link="/user=" + str(id) + "/lk")
