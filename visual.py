@@ -118,11 +118,7 @@ def lk(id):
     if id != user_id:
         return "Нет доступа"
     if request.method == "POST":
-        face = main_func(fr, s)
-        if face == -1:
-            return redirect('/user=' + str(id) + '/error_page')
-        return redirect('/user=' + str(id) + '/success_page/student_id=' + str(face))
-
+        return redirect('/user=' + str(id) + '/put_mark')
     conn, cur = get_connection('data.db')
     ask = 'SELECT name, id FROM student WHERE teacher_id = ' + str(id)
     res = cur.execute(ask).fetchall()
@@ -198,6 +194,19 @@ def error_page(id):
     if id != user_id:
         return 'Нет доступа'
     return render_template('error_page.html', link="/user=" + str(id) + "/lk")
+
+
+@app.route('/user=<int:id>/put_mark', methods=['POST', 'GET'])
+def put_mark(id):
+    if id != user_id:
+        return 'Нет доступа'
+    if request.method == 'POST':
+        f = request.files['photo']
+        face = main_func(fr, s, f)
+        if face == -1:
+            return redirect('/user=' + str(id) + '/error_page')
+        return redirect('/user=' + str(id) + '/success_page/student_id=' + str(face))
+    return render_template('put_mark.html')
 
 
 if __name__ == "__main__":
