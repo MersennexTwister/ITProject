@@ -13,7 +13,6 @@ class FaceRec:
 
     def __init__(self, path):
         self.workPath = path
-        self.video_capture = cv2.VideoCapture(0)
 
     def startWork(self):
         imagePaths = list(paths.list_images(self.workPath))
@@ -33,9 +32,9 @@ class FaceRec:
         f.write(pickle.dumps(data))
         f.close()
 
-    def recogniteTheFace(self):
+    def recogniteTheFace(self, img):
         data = pickle.loads(open('face_enc', "rb").read())
-        ret, rgb = self.video_capture.read()
+        rgb = img
         faces = face_recognition.face_locations(rgb)
         encodings = face_recognition.face_encodings(rgb)
         flist = {}
