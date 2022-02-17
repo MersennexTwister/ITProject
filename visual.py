@@ -1,6 +1,8 @@
 import os
 import shutil
 
+import cv2
+from PIL import Image
 from flask import Flask, render_template, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 import sqlite3 as sql
@@ -8,6 +10,7 @@ import sqlite3 as sql
 from werkzeug.utils import secure_filename
 
 from interlayer import main_func, start
+import numpy as np
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
@@ -202,7 +205,16 @@ def put_mark(id):
         return 'Нет доступа'
     if request.method == 'POST':
         f = request.files['photo']
-        face = main_func(fr, s, f)
+
+        APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+        UPLOAD_FOLD = 'hierundda'
+
+        UPLOAD_FOLDER = os.path.join(APP_ROOT, UPLOAD_FOLD)
+        app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+        f.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(f.filename)))
+        img = cv2.imread("hierundda/" + f.filename, cv2.IMREAD_COLOR)
+        face = main_func(fr, s, img)
+        os.remove('hierundda/' + f.filename)
         if face == -1:
             return redirect('/user=' + str(id) + '/error_page')
         return redirect('/user=' + str(id) + '/success_page/student_id=' + str(face))
