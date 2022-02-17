@@ -2,13 +2,11 @@ import os
 import shutil
 
 import cv2
-from PIL import Image
 from flask import Flask, render_template, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 import sqlite3 as sql
 
 from werkzeug.utils import secure_filename
-
 from interlayer import main_func, start
 
 app = Flask(__name__)
@@ -23,7 +21,7 @@ def get_connection(db_name):
     return conn, cur
 
 
-def set_path_faces(id):
+def set_path(id):
     APP_ROOT = os.path.dirname(os.path.abspath(__file__))
     UPLOAD_FOLD = 'faces/' + str(id)
 
@@ -31,13 +29,6 @@ def set_path_faces(id):
         os.chdir('faces')
         os.mkdir(str(id))
         os.chdir('..')
-
-    UPLOAD_FOLDER = os.path.join(APP_ROOT, UPLOAD_FOLD)
-    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-def set_path_cache():
-    APP_ROOT = os.path.dirname(os.path.abspath(__file__))
-    UPLOAD_FOLD = 'site_image_cache'
 
     UPLOAD_FOLDER = os.path.join(APP_ROOT, UPLOAD_FOLD)
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -152,7 +143,7 @@ def add_student(id):
         photo1, photo2, photo3 = request.files['photo1'], request.files['photo2'], request.files['photo3']
         ask = "SELECT COUNT(id) FROM student"
         inf = cur.execute(ask).fetchone()[0] + 1
-        set_path_faces(inf)
+        set_path(inf)
         photo1.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(photo1.filename)))
         photo2.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(photo2.filename)))
         photo3.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(photo3.filename)))
@@ -208,12 +199,17 @@ def put_mark(id):
     if id != user_id:
         return 'Нет доступа'
     if request.method == 'POST':
-        img = request.files['photo']
-        set_path_cache()
-        img.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(img.filename)))
-        img = cv2.imread("site_image_cache/" + img.filename, cv2.IMREAD_COLOR)
+        f = request.files['photo']
+
+        APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+        UPLOAD_FOLD = 'site_image_cache'
+        UPLOAD_FOLDER = os.path.join(APP_ROOT, UPLOAD_FOLD)
+        app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+        
+        f.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(f.filename)))
+        img = cv2.imread("site_image_cache/" + f.filename, cv2.IMREAD_COLOR)
         face = main_func(fr, s, img)
-        os.remove('image_cache/' + img.filename)
+        os.remove('site_image_cache/' + f.filename)
         if face == -1:
             return redirect('/user=' + str(id) + '/error_page')
         return redirect('/user=' + str(id) + '/success_page/student_id=' + str(face))

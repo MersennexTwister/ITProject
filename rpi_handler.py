@@ -12,7 +12,7 @@ def image_request():
     video_capture.release()
     
 
-    rqs.post(URL + 'enter', data={'login': LOGIN, 'password': PASSWORD})
+    r = rqs.post(URL + 'enter', data={'login': LOGIN, 'password': PASSWORD})
     teacher_id = int(r.url.split('user=')[1].split('/')[0])
 
     img = PIL.Image.fromarray(rgb, 'RGB')
