@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block title %}Произошла ошибка!{% endblock %}
+
+{% block body %}
+<body class="text-center">
+    <h1>К сожалению, произошла ошибка.</h1>
+    <p>Cистема не смогла распознать ученика в камере.</p>
+    <a class="redirect" href={{ link }}>Вернуться в личный кабинет</a>
+</body>
+{% endblock %}

@@ -4,62 +4,42 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/lk.css') }}">
 {% endblock %}
 
-{% block title %}Личный кабинет{% endblock %}
+{% block title %}
 
-{% block bar %}
-<div id="side-bar" class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark" style="width: 280px;">
-    <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
-      <svg class="bi me-2" width="40" height="32"><use xlink:href="#bootstrap"></use></svg>
-      <span class="fs-4">Проект МАРС</span>
-    </a>
-    <hr>
-    <ul class="nav nav-pills flex-column mb-auto">
-      <li class="nav-item" style="margin-top: 30px;">
-        <a href="/" class="nav-link text-white" aria-current="page">
-          <svg class="bi me-2" width="16" height="20"><use xlink:href="#home"></use></svg>
-          Главная
-        </a>
-      </li>
-      <li style="margin-top: 30px;">
-        <a href="/about" class="nav-link text-white">
-          <svg class="bi me-2" width="16" height="20"><use xlink:href="#speedometer2"></use></svg>
-          Про нас
-        </a>
-      </li>
-      <li style="margin-top: 30px;">
-        <a href="/to-do" class="nav-link text-white">
-          <svg class="bi me-2" width="16" height="20"><use xlink:href="#table"></use></svg>
-          Инструкция
-        </a>
-      </li>
-        <li style="margin-top: 30px;">
-        <a href="/register" class="nav-link text-white">
-          <svg class="bi me-2" width="16" height="20"><use xlink:href="#table"></use></svg>
-          Зарегистрироваться
-        </a>
-      </li>
-      <li style="margin-top: 30px;">
-        <a href="/enter" class="nav-link text-white">
-          <svg class="bi me-2" width="16" height="20"><use xlink:href="#table"></use></svg>
-          Вход в ЛК
-        </a>
-      </li>
-    </ul>
-    <hr>
-</div>
+Личный кабинет
 {% endblock %}
 
+
 {% block body %}
-<h1>Личный кабинет</h1>
-<p>Учитель: {{ name }}</p>
-<p>Ученики:</p>
-<ul>
-    {% for el in students %}
-    <li>{{ el[0] }} <a href={{ el[1] }}>Удалить</a></li>
-    {% endfor %}
-</ul><br>
-<a href={{ link }} class="address">Добавить ученика</a>
-<form method="post">
-    <button type="submit" class="btn btn-success">Выставить оценку</button>
-</form>
+<body>
+    <div class="container px-4 py-5" id="featured-3">
+        <h2 class="pb-2 border-bottom">{{ name }} - Личный кабинет</h2>
+        <br>
+        <a href={{ link }}>
+            <button type="button" class="btn btn-danger">Добавить ученика</button>
+        </a>
+        <br><br>
+        <h3 class="pb-3">Список учеников:</h3>
+        <table class="table">
+            <thead>
+            <tr>
+                <th scope="col">Класс</th>
+                <th scope="col">ФИО</th>
+                <th scope="col"></th>
+            </tr>
+            </thead>
+            <tbody>
+                {% for el in students %}
+                <tr>
+                    <th scope="row">{{ el[1] }}</th>
+                    <td>{{ el[0] }}</td>
+                    <td><a href={{ el[2] }}>
+                        <button type="button" class="btn btn-outline-danger">Удалить</button>
+                    </td></a>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
 {% endblock %}
