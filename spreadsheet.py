@@ -204,7 +204,7 @@ class Spreadsheet():
             conn = sqlite3.connect(DATABASE)
             cursor = conn.cursor()
             _id_ = cursor.execute("SELECT name FROM student where id = " + str(_ID)).fetchone()
-            _class_ = cursor.execute("SELECT class FROM student where id = " + str(_ID)).fetchone()
+            _class_ = cursor.execute("SELECT cl FROM student where id = " + str(_ID)).fetchone()
             return _id_[0], int(_class_[0])
 
         student_surname, student_class = find_id(mark_data[1])
