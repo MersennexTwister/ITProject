@@ -3,7 +3,8 @@ body {
     margin: 0;
 }
 
-#side-bar {
-    position: fixed;
-    height: 600px;
+#footer {
+    margin-top: 30%;
+    margin-bottom: 0px;
 }
+
