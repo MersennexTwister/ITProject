@@ -245,7 +245,7 @@ def put_mark():
 
         f.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(f.filename)))
         img = cv2.imread("site_image_cache/" + f.filename, cv2.IMREAD_COLOR)
-        face = main_func(fr, s, img)
+        face = main_func(fr, spreadsheet, img)
 
         if face == -1:
             pathList = list(paths.list_images('static'))
