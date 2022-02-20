@@ -257,7 +257,7 @@ def put_mark(id):
             pathList = list(paths.list_images('static'))
             cnt = len(pathList) + 1
             APP_ROOT = os.path.dirname(os.path.abspath(__file__))
-            UPLOAD_FOLD = 'undefined_image_cache'
+            UPLOAD_FOLD = 'static\\undefined_image_cache'
             UPLOAD_FOLDER = os.path.join(APP_ROOT, UPLOAD_FOLD)
             app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
             f.save(os.path.join(app.config['UPLOAD_FOLDER'], str(cnt) + '.png'))
@@ -284,7 +284,7 @@ def undefined_students():
     id = session['user_id']
     if id is None:
         return redirect('/error_no_access')
-    pathList = list(paths.list_images('static'))
+    pathList = list(paths.list_images('static/undefined_image_cache'))
     nameList = []
     for p in pathList:
         fname = p.split(os.path.sep)[-1]
@@ -298,9 +298,9 @@ def undefined_students():
                 ask = 'SELECT id FROM student WHERE name = "' + q + '"'
                 t_id = cur.execute(ask).fetchone()[0]
                 pathList = list(paths.list_images('faces\\' + str(t_id)))
-                os.replace(APP_ROOT + '\\static\\' + id + '.png', APP_ROOT + '\\faces\\' + str(t_id) + '\\' + str(len(pathList) + 1) + '.png')
+                os.replace(APP_ROOT + '\\static\\undefined_image_cache\\' + id + '.png', APP_ROOT + '\\faces\\' + str(t_id) + '\\' + str(len(pathList) + 1) + '.png')
             else:
-                os.remove(APP_ROOT + '\\static\\' + id + '.png')
+                os.remove(APP_ROOT + '\\static\\undefined_image_cache\\' + id + '.png')
         return redirect('/lk')
     ask = "SELECT name FROM student WHERE teacher_id = " + str(id)
     conn, cur = get_connection('data.db')
