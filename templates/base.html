@@ -3,11 +3,10 @@
   <head>
       <meta charset="UTF-8">
       <title>{% block title %} {% endblock %}</title>
-      <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
       <link href="{{url_for('static', filename = 'css/bootstrap.min.css')}}" rel="stylesheet">
       <link rel="shortcut icon" href="{{ url_for('static', filename='img/icon_for_app.ico') }}" type="image/x-icon">
   </head>
-
+  
 <body>
   <nav class="navbar navbar-expand-sm navbar-dark bg-dark" aria-label="navbar">
     <div class="container-fluid">
@@ -46,15 +45,15 @@
       </div>
       {% endif %}
     </nav>
-
-
-  <div class="body-main">{% block body %} {% endblock %}</div>
-
-
+  
+    
+    {% block body %} {% endblock %}
+  
+  
   <script src="{{url_for('static', filename='js/bootstrap.bundle.min.js')}}"></script>
-
-
-  <footer class="py-4 bg-dark text-center" id="footer">
+  
+  
+  <footer class="footer mt-auto py-2 bg-dark fixed-bottom border-top text-center" id="footer">
     <div class="container">
       <p class="text-muted">&copy; Команда Mersenne×Twister, 2021-2022</p>
     </div>
@@ -63,3 +62,4 @@
 
 
 </html>
+
