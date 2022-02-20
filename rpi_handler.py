@@ -13,7 +13,8 @@ def image_request():
     
 
     r = rqs.post(URL + 'login', data={'login': LOGIN, 'password': PASSWORD})
-    teacher_id = int(r.url.split('user=')[1].split('/')[0])
+    print(r.text)
+
 
     img = PIL.Image.fromarray(rgb, 'RGB')
 
@@ -21,7 +22,7 @@ def image_request():
     img = open('rpi_image_cache/' + 'cached.png', 'rb')
 
     files = {'photo': img}
-    r = rqs.post(URL + 'user=' + str(teacher_id) + '/put_mark', files=files)
+    r = rqs.post(URL + 'lk/put_mark', files=files)
 
     img.close()
     os.remove('rpi_image_cache/' + 'cached.png')

@@ -222,9 +222,6 @@ def delete_student(st_id):
 
 @app.route('/lk/success_page/student_id=<int:st_id>')
 def success_page(st_id):
-    id = session['user_id']
-    if id is None:
-        return redirect('/error_no_access')
     ask = "SELECT name FROM student WHERE id = " + str(st_id)
     conn, cur = get_connection('data.db')
     name = cur.execute(ask).fetchone()[0]
@@ -233,14 +230,11 @@ def success_page(st_id):
 
 @app.route('/lk/error_recognise')
 def error_recognise():
-    id = session['user_id']
-    if id is None:
-        return redirect('/error_no_access')
     return render_template('error_recognise.html')
 
 
 @app.route('/lk/put_mark', methods=['POST', 'GET'])
-def put_mark(id):
+def put_mark():
     if request.method == 'POST':
         f = request.files['photo']
 
