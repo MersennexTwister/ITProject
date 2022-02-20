@@ -2,7 +2,7 @@ import os
 import shutil
 
 import cv2
-from flask import Flask, render_template, request, redirect, Blueprint
+from flask import Flask, render_template, request, redirect, session, g
 from flask_sqlalchemy import SQLAlchemy
 from imutils import paths
 from sqlalchemy import Column, exc
@@ -13,20 +13,17 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from interlayer import main_func, start, recount
 
 app = Flask(__name__)
+app.secret_key = '28bee993c5553ec59b3c051d535760198f6f018ed1cca1ddadcdb570352ef05b'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-user_id = None
 fr, s = start()
-is_changed = False
-
-app.jinja_env.globals.update(teacher_name = None, lk_link = None)
 
 def update():
-    global is_changed, fr
-    if is_changed:
+    global fr
+    if session['is_changed']:
         fr = recount()
-        is_changed = False
+        session['is_changed'] = False
 
 def get_connection(db_name):
     conn = sql.connect(db_name)
@@ -64,19 +61,30 @@ class Student(db.Model):
     def __repr__(self):
         return '<student %r>' % self.id
 
+@app.before_request
+def load_logged_in_user():
+    id = session.get('user_id')
+
+    if id is None:
+        g.teacher_name = None
+    else:
+        conn, cur = get_connection('data.db')
+        teacher = cur.execute('SELECT * FROM teacher WHERE id = ?', (id,)).fetchone()
+        g.teacher_name = teacher[1]
+    
 
 @app.route("/")
 def main():
     return render_template("main.html")
 
 
-@app.route("/todo")
+@app.route("/instruction")
 def instruction():
-    return render_template("todo.html")
+    return render_template("instruction.html")
 
 
 @app.route("/about")
-def teacher_inf():
+def about():
     return render_template("about.html")
 
     
@@ -87,7 +95,6 @@ def error_no_access():
 
 @app.route("/register", methods=["POST", "GET"])
 def register():
-    global user_id
     error = None
     if request.method == "POST":
 
@@ -104,7 +111,8 @@ def register():
             try:
                 db.session.add(t)
                 db.session.commit()
-                user_id = id
+                session['user_id'] = id
+                session['is_changed'] = None
                 return redirect('/user=' + str(id) + '/lk')
             except exc.IntegrityError:
                 error = f'Пользватель с логином "{login}" уже зарегестрирован!'
@@ -115,14 +123,13 @@ def register():
 
 @app.route('/login', methods=["POST", "GET"])
 def login():
-    global user_id
+    error = None
     if request.method == "POST":
         conn, cur = get_connection('data.db')
 
         login = request.form['login']
         password = request.form['password']
 
-        error = None
         teacher = cur.execute('SELECT * FROM teacher WHERE login = ?', (login,)).fetchone()
 
         if teacher == None:
@@ -131,40 +138,40 @@ def login():
             error = 'Неверный пароль.'
 
         if error == None:
-            user_id = teacher[0]
-            app.jinja_env.globals.update(teacher_name = teacher[1], lk_link = f'/user={teacher[0]}/lk')
-            return redirect('/user=' + str(user_id) + '/lk')
+            session['user_id'] = teacher[0]
+            session['is_changed'] = None
+            return redirect('/lk')
         
-        return render_template("login.html", error = error)
-
-    return render_template("login.html", error = None)
+    return render_template("login.html", error = error)
 
 
-@app.route('/user=<int:id>/lk', methods = ["POST", "GET"])
-def lk(id):
-    if id != user_id:
+@app.route('/lk', methods = ["POST", "GET"])
+def lk():
+    id = session['user_id']
+    if id is None:
         return redirect('/error_no_access')
     if request.method == 'POST':
         update()
-        return redirect('/user=' + str(id) + '/lk')
+        return redirect('/lk')
     conn, cur = get_connection('data.db')
     ask = 'SELECT name, cl, id FROM student WHERE teacher_id = ' + str(id) + ' ORDER BY cl ASC'
     res = cur.execute(ask).fetchall()
     st = []
     print(res)
     for i in res:
-        st.append([i[0], i[1], '/user=' + str(id) + '/delete_student/student_id=' + str(i[2])])
+        st.append([i[0], i[1], 'lk/delete_student/student_id=' + str(i[2])])
     ask = 'SELECT name FROM teacher WHERE id = ' + str(id)
     name = cur.execute(ask).fetchone()[0]
     print(name)
-    return render_template('lk.html', name=name, students=st, link="/user=" + str(id) + "/add_student", link_un="/user=" + str(id) + "/undefined_students")
+    return render_template('lk.html', name=name, students=st)
 
 
-@app.route('/user=<int:id>/add_student', methods=["POST", "GET"])
-def add_student(id):
-    global is_changed
-    if id != user_id:
+@app.route('/lk/add_student', methods=["POST", "GET"])
+def add_student():
+    id = session['user_id']
+    if id is None:
         return redirect('/error_no_access')
+
     if request.method == "POST":
         name = request.form['name']
         cl = request.form['class']
@@ -186,53 +193,54 @@ def add_student(id):
 
         db.session.add(t)
         db.session.commit()
-        is_changed = True
-        return redirect('/user=' + str(id) + '/lk')
+        session['is_changed'] = True
+        return redirect('/lk')
 
 
     return render_template('add_student.html')
 
 
-@app.route('/user=<int:id>/delete_student/student_id=<int:st_id>', methods=["POST", "GET"])
-def delete_student(id, st_id):
-    global is_changed
-    if id != user_id:
+@app.route('/lk/delete_student/student_id=<int:st_id>', methods=["POST", "GET"])
+def delete_student(st_id):
+    id = session['user_id']
+    if id is None:
         return redirect('/error_no_access')
+
     if request.method == "POST":
         conn, cur = get_connection('data.db')
         ask = 'DELETE FROM student WHERE id = ' + str(st_id)
         cur.execute(ask)
         conn.commit()
         shutil.rmtree('faces/' + str(st_id))
-        is_changed = True
-        return redirect('/user=' + str(id) + '/lk')
+        session['is_changed'] = True
+        return redirect('/lk')
     conn, cur = get_connection('data.db')
     ask = "SELECT name FROM student WHERE id = " + str(st_id)
     name = cur.execute(ask).fetchone()[0]
     return render_template('delete_student.html', name=name)
 
 
-@app.route('/user=<int:id>/success_page/student_id=<int:st_id>')
-def success_page(id, st_id):
-    if id != user_id:
+@app.route('/lk/success_page/student_id=<int:st_id>')
+def success_page(st_id):
+    id = session['user_id']
+    if id is None:
         return redirect('/error_no_access')
     ask = "SELECT name FROM student WHERE id = " + str(st_id)
     conn, cur = get_connection('data.db')
     name = cur.execute(ask).fetchone()[0]
-    return render_template('success_page.html', name=name, link="/user=" + str(id) + "/lk")
+    return render_template('success_page.html', name=name)
 
 
-@app.route('/user=<int:id>/error_page')
-def error_page(id):
-    if id != user_id:
+@app.route('/lk/error_recognise')
+def error_recognise():
+    id = session['user_id']
+    if id is None:
         return redirect('/error_no_access')
-    return render_template('error_page.html', link="/user=" + str(id) + "/lk")
+    return render_template('error_recognise.html')
 
 
-@app.route('/user=<int:id>/put_mark', methods=['POST', 'GET'])
+@app.route('/lk/put_mark', methods=['POST', 'GET'])
 def put_mark(id):
-    if id != user_id:
-        return redirect('/error_no_access')
     if request.method == 'POST':
         f = request.files['photo']
 
@@ -253,26 +261,28 @@ def put_mark(id):
             UPLOAD_FOLDER = os.path.join(APP_ROOT, UPLOAD_FOLD)
             app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
             f.save(os.path.join(app.config['UPLOAD_FOLDER'], str(cnt) + '.png'))
-            return redirect('/user=' + str(id) + '/error_page')
-        return redirect('/user=' + str(id) + '/success_page/student_id=' + str(face))
+            return redirect('/lk/error_recognise')
+        return redirect('/lk/success_page/student_id=' + str(face))
     return render_template('put_mark.html')
 
-@app.route('/singout')
-def singout():
-    app.jinja_env.globals.update(teacher_name = None, lk_link = None)
+@app.route('/logout')
+def logout():
+    session.clear()
     return redirect('/')
 
 
-@app.route('/user=<int:id>/imshow/<string:fname>')
-def imshow(id, fname):
-    if id != user_id:
+@app.route('/lk/imshow/<string:fname>')
+def imshow(fname):
+    id = session['user_id']
+    if id is None:
         return redirect('/error_no_access')
     return render_template('imshow.html', num=fname[:-4])
 
 
-@app.route('/user=<int:id>/undefined_students', methods=['POST', 'GET'])
-def undefined_students(id):
-    if id != user_id:
+@app.route('/lk/undefined_students', methods=['POST', 'GET'])
+def undefined_students():
+    id = session['user_id']
+    if id is None:
         return redirect('/error_no_access')
     pathList = list(paths.list_images('static'))
     nameList = []
@@ -291,7 +301,7 @@ def undefined_students(id):
                 os.replace(APP_ROOT + '\\static\\' + id + '.png', APP_ROOT + '\\faces\\' + str(t_id) + '\\' + str(len(pathList) + 1) + '.png')
             else:
                 os.remove(APP_ROOT + '\\static\\' + id + '.png')
-        return redirect('/user=' + str(id) + '/lk')
+        return redirect('/lk')
     ask = "SELECT name FROM student WHERE teacher_id = " + str(id)
     conn, cur = get_connection('data.db')
     nl = cur.execute(ask).fetchall()

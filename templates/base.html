@@ -24,19 +24,19 @@
             <a class="nav-link" href="/about">О нас</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/todo">Инструкция</a>
+            <a class="nav-link" href="/instruction">Инструкция</a>
           </li>
         </ul>
       </div>
-      {% if teacher_name %}
+      {% if g.teacher_name %}
       <div class="flex-shrink-0 dropdown">
           <a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser2" data-bs-toggle="dropdown" aria-expanded="false">
-            {{ teacher_name }}
+            {{ g.teacher_name }}
           </a>
           <ul class="dropdown-menu text-small shadow" aria-labelledby="dropdownUser2">
-            <li><a class="dropdown-item" href={{lk_link}}>Личный кабинет</a></li>
+            <li><a class="dropdown-item" href="/lk">Личный кабинет</a></li>
             <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="/singout">Выйти...</a></li>
+            <li><a class="dropdown-item" href="/logout">Выйти...</a></li>
           </ul>
         </div>
       {% else %}
@@ -53,7 +53,7 @@
   
   <script src="{{url_for('static', filename='js/bootstrap.bundle.min.js')}}"></script>
   
-  <footer class="py-3 bg-dark text-center" id="footer">
+  <footer class="py-4 bg-dark text-center" id="footer">
     <div class="container">
       <p class="text-muted">&copy; Команда Mersenne×Twister, 2021-2022</p>
     </div>

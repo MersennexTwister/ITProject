@@ -1,13 +1,9 @@
 {% extends 'base.html' %}
 
-{% block style %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/success_page.css') }}">
-{% endblock %}
-
 {% block title %}Успешно!{% endblock %}
 
 {% block body %}
 <h1>Успешно!</h1>
 <p>Ученику по имени <b>{{ name }}</b> была успешно поставлена оценка.</p>
-<a class="redirect" href={{ link }}>Вернуться в личный кабинет</a>
+<a class="redirect" href='/lk'>Вернуться в личный кабинет</a>
 {% endblock %}

@@ -1,19 +1,16 @@
 {% extends 'base.html' %}
 
-{% block style %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/delete_student.css') }}">
-{% endblock %}
-
 {% block title %}Удаление ученика{% endblock %}
 
 
 {% block body %}
 <body>
-    <div class="container px-4 py-5" id="featured-3">
-      <h2 class="pb-2 border-bottom">Удаление ученика</h2>
-      <h3 class="pb-3">Имя: {{ name }}</h3>
-      <form method="post" enctype = "multipart/form-data">
-        <button type="submit" class="btn btn-danger">Удалить</button>
-      </form>
+  <div class="container px-3 py-3" id="featured-3">
+    <h2 class="pb-2 border-bottom">Удаление ученика</h2>
+    <h3 class="pb-3">ФИО: {{ name }}</h3>
+    <form method="post" enctype = "multipart/form-data">
+      <button type="submit" class="btn btn-danger">Удалить</button>
+    </form>
+  </div>
 </body>
 {% endblock %}

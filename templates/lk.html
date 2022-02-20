@@ -2,7 +2,6 @@
 
 
 {% block title %}
-
 Личный кабинет
 {% endblock %}
 
@@ -12,14 +11,15 @@
     <div class="container px-4 py-5" id="featured-3">
         <h2 class="pb-2 border-bottom">{{ name }} - Личный кабинет</h2>
         <br>
-        <a href={{ link }}>
+        <a href = "lk/add_student">
             <button type="button" class="btn btn-danger">Добавить ученика</button>
-        </a><br><br>
+        </a>
+        <br><br>
         <form method="post">
             <button type="submit" class="btn btn-success" id="btn-link">Обновить данные</button>
         </form><br>
-        <a href={{ link_un }}>
-            Нераспознанные ученики
+        <a href="lk/undefined_students">
+            <button type="button" class="btn btn-primary">Нераспознанные ученики</button>
         </a>
         <br><br>
         <h3 class="pb-3">Список учеников:</h3>
