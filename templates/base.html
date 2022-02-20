@@ -2,13 +2,13 @@
 <html lang="en">
   <head>
       <meta charset="UTF-8">
-      {% block style %} {% endblock %}
       <title>{% block title %} {% endblock %}</title>
       <link href="{{url_for('static', filename = 'css/bootstrap.min.css')}}" rel="stylesheet">
       <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
       <link rel="shortcut icon" href="{{ url_for('static', filename='img/icon_for_app.ico') }}" type="image/x-icon">
   </head>
-  <body>
+  
+<body>
   <nav class="navbar navbar-expand-sm navbar-dark bg-dark" aria-label="navbar">
     <div class="container-fluid">
       <a class="navbar-brand" href="/">
@@ -48,17 +48,18 @@
     </nav>
   
     
+    {% block body %} {% endblock %}
   
-  {% block body %} {% endblock %}
   
   <script src="{{url_for('static', filename='js/bootstrap.bundle.min.js')}}"></script>
   
-  </body>
-
-  <footer class="blog-footer py-3 bg-dark text-center" id="footer">
+  <footer class="py-3 bg-dark text-center" id="footer">
     <div class="container">
-      <span class="text-muted">&copy; Команда Mersenne×Twister, 2021-2022</span>
+      <p class="text-muted">&copy; Команда Mersenne×Twister, 2021-2022</p>
     </div>
   </footer>
+</body>
+
+
 </html>
 
