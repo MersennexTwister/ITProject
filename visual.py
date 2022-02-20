@@ -10,14 +10,14 @@ import sqlite3 as sql
 
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
-from interlayer import main_func, start, recount
+from interlayer import main_func, start, recount, put_mark_directly
 
 app = Flask(__name__)
 app.secret_key = '28bee993c5553ec59b3c051d535760198f6f018ed1cca1ddadcdb570352ef05b'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-fr, s = start()
+fr, spreadsheet = start()
 
 def update():
     global fr
@@ -242,20 +242,18 @@ def put_mark():
         UPLOAD_FOLD = 'site_image_cache'
         UPLOAD_FOLDER = os.path.join(APP_ROOT, UPLOAD_FOLD)
         app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-        
+
         f.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(f.filename)))
         img = cv2.imread("site_image_cache/" + f.filename, cv2.IMREAD_COLOR)
         face = main_func(fr, s, img)
-        os.remove('site_image_cache/' + f.filename)
+
         if face == -1:
             pathList = list(paths.list_images('static'))
             cnt = len(pathList) + 1
-            APP_ROOT = os.path.dirname(os.path.abspath(__file__))
-            UPLOAD_FOLD = 'static\\undefined_image_cache'
-            UPLOAD_FOLDER = os.path.join(APP_ROOT, UPLOAD_FOLD)
-            app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-            f.save(os.path.join(app.config['UPLOAD_FOLDER'], str(cnt) + '.png'))
+            os.replace(APP_ROOT + '/site_image_cache/' + f.filename, APP_ROOT + '/static/undefined_image_cache/' + str(cnt) + '.png')
             return redirect('/lk/error_recognise')
+        else:
+            os.remove('site_image_cache/' + f.filename)
         return redirect('/lk/success_page/student_id=' + str(face))
     return render_template('put_mark.html')
 
@@ -291,10 +289,11 @@ def undefined_students():
                 conn, cur = get_connection('data.db')
                 ask = 'SELECT id FROM student WHERE name = "' + q + '"'
                 t_id = cur.execute(ask).fetchone()[0]
-                pathList = list(paths.list_images('faces\\' + str(t_id)))
-                os.replace(APP_ROOT + '\\static\\undefined_image_cache\\' + id + '.png', APP_ROOT + '\\faces\\' + str(t_id) + '\\' + str(len(pathList) + 1) + '.png')
+                pathList = list(paths.list_images('faces/' + str(t_id)))
+                put_mark_directly(t_id, spreadsheet)
+                os.replace(APP_ROOT + '/static/undefined_image_cache/' + id + '.png', APP_ROOT + '/faces/' + str(t_id) + '/' + str(len(pathList) + 1) + '.png')
             else:
-                os.remove(APP_ROOT + '\\static\\undefined_image_cache\\' + id + '.png')
+                os.remove(APP_ROOT + '/static/undefined_image_cache/' + id + '.png')
         return redirect('/lk')
     ask = "SELECT name FROM student WHERE teacher_id = " + str(id)
     conn, cur = get_connection('data.db')
@@ -302,10 +301,7 @@ def undefined_students():
     stList = []
     for name in nl:
         stList.append(name[0])
-    ask = "SELECT name FROM teacher WHERE id = " + str(id)
-    conn, cur = get_connection('data.db')
-    name = cur.execute(ask).fetchone()[0]
-    return render_template('undefined_students.html', fList=nameList, nameList=stList, name=name)
+    return render_template('undefined_students.html', fList=nameList, nameList=stList)
 
 
 if __name__ == "__main__":

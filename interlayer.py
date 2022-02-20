@@ -1,6 +1,9 @@
-import cv2
 from FaceRec import FaceRec
 from spreadsheet import Spreadsheet
+import pytz
+import datetime
+
+tz = pytz.timezone('Europe/Moscow')
 
 def start():
     spreadsheet = Spreadsheet()
@@ -15,9 +18,14 @@ def recount():
 
 def main_func(fr, spreadsheet, img):
 
-    face = fr.recogniteTheFace(img)
+    face_id = fr.recogniteTheFace(img)
 
-    if face != -1:
-        spreadsheet.put_mark(["01.12.2021", face])
+    if face_id != -1:
+        dt = datetime.datetime.now(tz)
+        spreadsheet.put_mark([dt.strftime("%d.%m.%Y"), face_id])
 
-    return face
+    return face_id
+
+def put_mark_directly(id, spreadsheet):
+    dt = datetime.datetime.now(tz)
+    spreadsheet.put_mark([dt.strftime("%d.%m.%Y"), id])
