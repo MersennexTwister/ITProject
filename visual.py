@@ -4,21 +4,29 @@ import shutil
 import cv2
 from flask import Flask, render_template, request, redirect, Blueprint
 from flask_sqlalchemy import SQLAlchemy
+from imutils import paths
 from sqlalchemy import Column, exc
 import sqlite3 as sql
 
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
-from interlayer import main_func, start
+from interlayer import main_func, start, recount
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-fr, s = start()
 user_id = None
+fr, s = start()
+is_changed = False
 
 app.jinja_env.globals.update(teacher_name = None, lk_link = None)
+
+def update():
+    global is_changed, fr
+    if is_changed:
+        fr = recount()
+        is_changed = False
 
 def get_connection(db_name):
     conn = sql.connect(db_name)
@@ -136,6 +144,9 @@ def login():
 def lk(id):
     if id != user_id:
         return redirect('/error_no_access')
+    if request.method == 'POST':
+        update()
+        return redirect('/user=' + str(id) + '/lk')
     conn, cur = get_connection('data.db')
     ask = 'SELECT name, cl, id FROM student WHERE teacher_id = ' + str(id) + ' ORDER BY cl ASC'
     res = cur.execute(ask).fetchall()
@@ -146,11 +157,12 @@ def lk(id):
     ask = 'SELECT name FROM teacher WHERE id = ' + str(id)
     name = cur.execute(ask).fetchone()[0]
     print(name)
-    return render_template('lk.html', name=name, students=st, link="/user=" + str(id) + "/add_student")
+    return render_template('lk.html', name=name, students=st, link="/user=" + str(id) + "/add_student", link_un="/user=" + str(id) + "/undefined_students")
 
 
 @app.route('/user=<int:id>/add_student', methods=["POST", "GET"])
 def add_student(id):
+    global is_changed
     if id != user_id:
         return redirect('/error_no_access')
     if request.method == "POST":
@@ -174,6 +186,7 @@ def add_student(id):
 
         db.session.add(t)
         db.session.commit()
+        is_changed = True
         return redirect('/user=' + str(id) + '/lk')
 
 
@@ -182,6 +195,7 @@ def add_student(id):
 
 @app.route('/user=<int:id>/delete_student/student_id=<int:st_id>', methods=["POST", "GET"])
 def delete_student(id, st_id):
+    global is_changed
     if id != user_id:
         return redirect('/error_no_access')
     if request.method == "POST":
@@ -190,6 +204,7 @@ def delete_student(id, st_id):
         cur.execute(ask)
         conn.commit()
         shutil.rmtree('faces/' + str(st_id))
+        is_changed = True
         return redirect('/user=' + str(id) + '/lk')
     conn, cur = get_connection('data.db')
     ask = "SELECT name FROM student WHERE id = " + str(st_id)
@@ -231,6 +246,13 @@ def put_mark(id):
         face = main_func(fr, s, img)
         os.remove('site_image_cache/' + f.filename)
         if face == -1:
+            pathList = list(paths.list_images('static'))
+            cnt = len(pathList) + 1
+            APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+            UPLOAD_FOLD = 'undefined_image_cache'
+            UPLOAD_FOLDER = os.path.join(APP_ROOT, UPLOAD_FOLD)
+            app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+            f.save(os.path.join(app.config['UPLOAD_FOLDER'], str(cnt) + '.png'))
             return redirect('/user=' + str(id) + '/error_page')
         return redirect('/user=' + str(id) + '/success_page/student_id=' + str(face))
     return render_template('put_mark.html')
@@ -239,6 +261,48 @@ def put_mark(id):
 def singout():
     app.jinja_env.globals.update(teacher_name = None, lk_link = None)
     return redirect('/')
+
+
+@app.route('/user=<int:id>/imshow/<string:fname>')
+def imshow(id, fname):
+    if id != user_id:
+        return redirect('/error_no_access')
+    return render_template('imshow.html', num=fname[:-4])
+
+
+@app.route('/user=<int:id>/undefined_students', methods=['POST', 'GET'])
+def undefined_students(id):
+    if id != user_id:
+        return redirect('/error_no_access')
+    pathList = list(paths.list_images('static'))
+    nameList = []
+    for p in pathList:
+        fname = p.split(os.path.sep)[-1]
+        nameList.append(('imshow/' + fname, fname[:-4]))
+    if request.method == 'POST':
+        for (p, id) in nameList:
+            q = request.form[id]
+            APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+            if q != 'Ошибка':
+                conn, cur = get_connection('data.db')
+                ask = 'SELECT id FROM student WHERE name = "' + q + '"'
+                t_id = cur.execute(ask).fetchone()[0]
+                pathList = list(paths.list_images('faces\\' + str(t_id)))
+                os.replace(APP_ROOT + '\\static\\' + id + '.png', APP_ROOT + '\\faces\\' + str(t_id) + '\\' + str(len(pathList) + 1) + '.png')
+            else:
+                os.remove(APP_ROOT + '\\static\\' + id + '.png')
+        return redirect('/user=' + str(id) + '/lk')
+    ask = "SELECT name FROM student WHERE teacher_id = " + str(id)
+    conn, cur = get_connection('data.db')
+    nl = cur.execute(ask).fetchall()
+    stList = []
+    for name in nl:
+        stList.append(name[0])
+    ask = "SELECT name FROM teacher WHERE id = " + str(id)
+    conn, cur = get_connection('data.db')
+    name = cur.execute(ask).fetchone()[0]
+    return render_template('undefined_students.html', fList=nameList, nameList=stList, name=name)
+
 
 if __name__ == "__main__":
     app.run(debug=True)

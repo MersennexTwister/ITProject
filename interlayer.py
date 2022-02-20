@@ -8,6 +8,11 @@ def start():
     fr.startWork()
     return fr, spreadsheet
 
+def recount():
+    fr = FaceRec('faces')
+    fr.startWork()
+    return fr
+
 def main_func(fr, spreadsheet, img):
 
     face = fr.recogniteTheFace(img)

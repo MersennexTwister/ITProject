@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block style %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/undefined_students.css') }}">
+{% endblock %}
+
+{% block title %}
+
+Личный кабинет
+{% endblock %}
+
+
+{% block body %}
+<body>
+    <div class="container px-4 py-5" id="featured-3">
+        <form method="post" enctype = "multipart/form-data">
+            <h2 class="pb-2 border-bottom">{{ name }} - Нераспознанные ученики</h2>
+            <br>
+            <button type="submit" class="btn btn-danger">Сохранить и очистить</button>
+            <br><br>
+            <h3 class="pb-3">Список учеников:</h3>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col">Фотография</th>
+                    <th scope="col">Выбрать</th>
+                </tr>
+                </thead>
+                <tbody>
+                    {% for el in fList %}
+                    <tr>
+                        <th scope="row"><a href={{ el[0] }}>Ссылка</a></th>
+                        <td>
+                            <select name={{ el[1] }}>
+                            <option><a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser2" data-bs-toggle="dropdown" aria-expanded="false">
+                                Ошибка
+                            </a></option>
+                            {% for x in nameList %}
+                            <option><a class="dropdown-item">{{ x }}</a></option>
+                            {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </form>
+    </div>
+</body>
+{% endblock %}
