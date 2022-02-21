@@ -263,24 +263,18 @@ def logout():
     return redirect('/')
 
 
-@app.route('/lk/imshow/<string:fname>')
-def imshow(fname):
-    id = session['user_id']
-    if id is None:
-        return redirect('/error_no_access')
-    return render_template('imshow.html', num=fname[:-4])
-
-
 @app.route('/lk/undefined_students', methods=['POST', 'GET'])
 def undefined_students():
     id = session['user_id']
     if id is None:
         return redirect('/error_no_access')
+
     pathList = list(paths.list_images('static/undefined_image_cache'))
     nameList = []
     for p in pathList:
         fname = p.split(os.path.sep)[-1]
-        nameList.append(('imshow/' + fname, fname[:-4]))
+        nameList.append(('undefined_image_cache/' + fname, fname[:fname.find('.')]))
+
     if request.method == 'POST':
         for (p, id) in nameList:
             q = request.form[id]
@@ -295,12 +289,14 @@ def undefined_students():
             else:
                 os.remove(APP_ROOT + '/static/undefined_image_cache/' + id + '.png')
         return redirect('/lk')
+
     ask = "SELECT name FROM student WHERE teacher_id = " + str(id)
     conn, cur = get_connection('data.db')
     nl = cur.execute(ask).fetchall()
     stList = []
     for name in nl:
         stList.append(name[0])
+
     return render_template('undefined_students.html', fList=nameList, nameList=stList)
 
 
