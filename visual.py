@@ -173,7 +173,7 @@ def add_student():
         return redirect('/error_no_access')
 
     if request.method == "POST":
-        name = request.form['name']
+        name = request.form['surname'] + ' ' + request.form['name'] + ' ' + request.form['patronymic']
         cl = request.form['class']
         conn, cur = get_connection('data.db')
         ask = "SELECT COUNT(id) FROM student WHERE name = '" + name + "' AND teacher_id = " + str(id)

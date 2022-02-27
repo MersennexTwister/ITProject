@@ -5,14 +5,23 @@
 
 {% block body %}
 <body>
-  <div class="container px-4 py-5" id="featured-3">
+  <div class="container px-4 py-5">
     <h2 class="pb-2 border-bottom">Добавление ученика</h2>
     <form method="post" enctype = "multipart/form-data">
-      <input type="text" name="name" id="name" class="form-control" placeholder="ФИО ученика"><br>
+      <br>
+      <div class="input-group">
+        <input type="text" name="surname" id="surname" class="form-control" placeholder="Фамилия">
+        <input type="text" name="name" id="name" class="form-control" placeholder="Имя">
+        <input type="text" name="patronymic" id="patronymic" class="form-control" placeholder="Отчество">
+      </div>
+      <br>
       <input type="text" name="class" id="class" class="form-control" placeholder="Класс обучения"><br>
-      <input name="photo1" id="photo1" type="file" class="form-control" placeholder="Фото ученика 1"><br>
-      <input name="photo2" id="photo2" type="file" class="form-control" placeholder="Фото ученика 2"><br>
-      <input name="photo3" id="photo3" type="file" class="form-control" placeholder="Фото ученика 3"><br>
+      <div class="input-group">
+        <input name="photo1" id="photo1" type="file" class="form-control" placeholder="Фото ученика 1">
+        <input name="photo2" id="photo2" type="file" class="form-control" placeholder="Фото ученика 2">
+        <input name="photo3" id="photo3" type="file" class="form-control" placeholder="Фото ученика 3">
+      </div>
+      <br>
       <button type="submit" class="btn btn-danger">Добавить</button>
     </form>
   </div>
