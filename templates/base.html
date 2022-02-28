@@ -7,59 +7,51 @@
       <link rel="shortcut icon" href="{{ url_for('static', filename='img/icon_for_app.ico') }}" type="image/x-icon">
   </head>
   
-<body>
-  <nav class="navbar navbar-expand-sm navbar-dark bg-dark" aria-label="navbar">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="/">
-        <img src="{{url_for('static', filename = 'img/project-mars-icon.svg')}}" width="40" height="40">
-        Проект МАРС
-      </a>
-      <div class="collapse navbar-collapse" id="navbarsExample03">
-        <ul class="navbar-nav me-auto mb-2 mb-sm-0">
-          <li class="nav-item">
-            <a class="nav-link" href="/">Главная</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/about">О нас</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/instruction">Инструкция</a>
-          </li>
-        </ul>
-      </div>
-      {% if g.teacher_name %}
-      <div class="flex-shrink-0 dropdown">
-          <a href="#" class="d-block text-decoration-none dropdown-toggle text-danger" id="dropdownUser2" data-bs-toggle="dropdown" aria-expanded="false">
-            {{ g.teacher_name }}
-          </a>
-          <ul class="dropdown-menu text-small shadow" aria-labelledby="dropdownUser2">
-            <li><a class="dropdown-item" href="/lk">Личный кабинет</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="/logout">Выйти...</a></li>
+  <body>
+    <nav class="navbar navbar-expand-sm navbar-dark bg-dark" aria-label="navbar">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+          <img src="{{url_for('static', filename = 'img/project-mars-icon.svg')}}" width="40" height="40">
+          Проект МАРС
+        </a>
+        <div class="collapse navbar-collapse" id="navbarsExample03">
+          <ul class="navbar-nav me-auto mb-2 mb-sm-0">
+            <li class="nav-item">
+              <a class="nav-link" href="/">Главная</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/about">О нас</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/instruction">Инструкция</a>
+            </li>
           </ul>
         </div>
-      {% else %}
-      <div class="col-md-3 text-end">
-        <a href="/login"><button type="button" class="btn btn-outline-danger me-2">Вход</button></a>
-        <a href="/register"><button type="button" class="btn btn-danger">Регистрация</button></a>
-      </div>
-      {% endif %}
-    </nav>
-  
+        {% if g.teacher_name %}
+        <div class="flex-shrink-0 dropdown">
+            <a href="#" class="d-block text-decoration-none dropdown-toggle text-danger" id="dropdownUser2" data-bs-toggle="dropdown" aria-expanded="false">
+              {{ g.teacher_name }}
+            </a>
+            <ul class="dropdown-menu text-small shadow" aria-labelledby="dropdownUser2">
+              <li><a class="dropdown-item" href="/lk">Личный кабинет</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/logout">Выйти...</a></li>
+            </ul>
+          </div>
+        {% else %}
+        <div class="col-md-3 text-end">
+          <a href="/login"><button type="button" class="btn btn-outline-danger me-2">Вход</button></a>
+          <a href="/register"><button type="button" class="btn btn-danger">Регистрация</button></a>
+        </div>
+        {% endif %}
+      </nav>
     
-    {% block body %} {% endblock %}
-  
-  
-  <script src="{{url_for('static', filename='js/bootstrap.bundle.min.js')}}"></script>
-  
-  
-  <footer class="bg-light py-1 fixed-bottom border-top text-center" id="footer">
-    <div class="container">
-      <p class="text-muted">&copy; Команда Mersenne×Twister, 2021-2022</p>
-    </div>
-  </footer>
-</body>
-
+      
+      {% block body %} {% endblock %}
+    
+    
+    <script src="{{url_for('static', filename='js/bootstrap.bundle.min.js')}}"></script>
+  </body>
 
 </html>
 
