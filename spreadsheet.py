@@ -56,24 +56,21 @@ class Spreadsheet():
             - удаление лишних листов
         '''
 
-        # Настравиваем общение с базой данных
-
-
         # Читаем ключи из файла
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(
+        self.credentials = ServiceAccountCredentials.from_json_keyfile_name(
             CREDENTIALS_FILE,
             ['https://www.googleapis.com/auth/spreadsheets',
              'https://www.googleapis.com/auth/drive']
         )
         # Авторизуемся в системе
-        httpAuth = credentials.authorize(httplib2.Http())
+        httpAuth = self.credentials.authorize(httplib2.Http())
 
         # Выбираем работу с таблицами и 4 версию API и
         # создаем service-объект, с помощью которого осуществляется работа с таблицей
-        self.service = apiclient.discovery.build('sheets', 'v4', http=httpAuth)
+        service = apiclient.discovery.build('sheets', 'v4', http=httpAuth)
 
         # Получаем список листов, их Id и название
-        spreadsheet = self.service.spreadsheets().get(spreadsheetId=spreadsheetId).execute()
+        spreadsheet = service.spreadsheets().get(spreadsheetId=spreadsheetId).execute()
         sheet_list = spreadsheet.get('sheets')
 
         # Запросы на:
@@ -153,27 +150,22 @@ class Spreadsheet():
 
             # Если request не пустой, отправляем его
         if len(initialize_requests) > 0:
-            self.service.spreadsheets().batchUpdate(
+            service.spreadsheets().batchUpdate(
                 spreadsheetId=spreadsheetId,
                 body={"requests": initialize_requests}
             ).execute()
         if len(delete_requests) > 0:
-            self.service.spreadsheets().batchUpdate(
+            service.spreadsheets().batchUpdate(
                 spreadsheetId=spreadsheetId,
                 body={"requests": delete_requests}
             ).execute()
         if len(update_request) > 0:
-            self.service.spreadsheets().batchUpdate(
+            service.spreadsheets().batchUpdate(
                 spreadsheetId=spreadsheetId,
                 body={"requests": update_request}
             ).execute()
 
         self.max_column_count_conv = self.__to_sheet_range__(MAX_COLUMN_COUNT)
-
-    # Массив с новыми данными
-    data_request = []
-    # Параметры обновления листов
-    sheet_list_updated = []
 
     def put_mark(self, mark_data):
         print(mark_data)
@@ -186,8 +178,18 @@ class Spreadsheet():
             Формат: [<ДД.ММ.ГГ>,<id ученика>].
         '''
 
+        # Массив с новыми данными
+        self.data_request = []
+
+        # Авторизуемся в системе
+        httpAuth = self.credentials.authorize(httplib2.Http())
+
+        # Выбираем работу с таблицами и 4 версию API и
+        # создаем service-объект, с помощью которого осуществляется работа с таблицей
+        service = apiclient.discovery.build('sheets', 'v4', http=httpAuth)
+
         # Получаем список листов в таблице
-        sheet_list = self.service.spreadsheets().get(spreadsheetId=spreadsheetId).execute().get('sheets')
+        sheet_list = service.spreadsheets().get(spreadsheetId=spreadsheetId).execute().get('sheets')
 
         # Координаты оценки (coordY ∈ {"A", "B", ..., "AA", ... }, coordX ∈ {2, 2, 3 ...})
         coordY, coordX = "0", "0"
@@ -219,7 +221,7 @@ class Spreadsheet():
         new_date_flag = True
 
         try:
-            dates = self.service.spreadsheets().values().get(
+            dates = service.spreadsheets().values().get(
                 spreadsheetId=spreadsheetId,
                 range=sheet["properties"]["title"] + "!" + "B1:" + self.max_column_count_conv + "1"
             ).execute()["values"][0]
@@ -244,7 +246,7 @@ class Spreadsheet():
         # Фамилия #
         new_surname_flag = True
         try:
-            surnames = self.service.spreadsheets().values().get(
+            surnames = service.spreadsheets().values().get(
                 spreadsheetId=spreadsheetId,
                 range=sheet["properties"]["title"] + "!" + "A2:A"
             ).execute()["values"]
@@ -271,7 +273,7 @@ class Spreadsheet():
         # Оценка #
         new_mark = 1
         try:
-            previous_mark = self.service.spreadsheets().values().get(
+            previous_mark = service.spreadsheets().values().get(
                 spreadsheetId=spreadsheetId,
                 range=sheet["properties"]["title"] + "!" + self.__to_sheet_range__(coordY) + str(coordX)
             ).execute()["values"][0][0]
@@ -290,13 +292,13 @@ class Spreadsheet():
 
         # Отправка новых данных
         if len(self.data_request) > 0:
-            self.service.spreadsheets().values().batchUpdate(spreadsheetId=spreadsheetId, body={
+            service.spreadsheets().values().batchUpdate(spreadsheetId=spreadsheetId, body={
                 "valueInputOption": "RAW",
                 "data": self.data_request
             }).execute()
 
             # Сортировка по фамилии (А -> Я, в лексикографическом порядке)
-            self.service.spreadsheets().batchUpdate(spreadsheetId=spreadsheetId, body=
+            service.spreadsheets().batchUpdate(spreadsheetId=spreadsheetId, body=
             {
                 "requests": [{
                     "sortRange": {
