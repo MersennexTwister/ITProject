@@ -10,19 +10,19 @@ import sqlite3 as sql
 
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
-from interlayer import main_func, start, recount, put_mark_directly
+from interlayer import Interlayer
 
 app = Flask(__name__)
 app.secret_key = '28bee993c5553ec59b3c051d535760198f6f018ed1cca1ddadcdb570352ef05b'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-fr, spreadsheet = start()
+interlayer = Interlayer()
 
 def update():
     global fr
     if session['is_changed']:
-        fr = recount()
+        interlayer.recount()
         session['is_changed'] = False
 
 def get_connection(db_name):
@@ -71,7 +71,7 @@ def load_logged_in_user():
         conn, cur = get_connection('data.db')
         teacher = cur.execute('SELECT * FROM teacher WHERE id = ?', (id,)).fetchone()
         g.teacher_name = teacher[1]
-    
+
 
 @app.route("/")
 def main():
@@ -87,7 +87,7 @@ def instruction():
 def about():
     return render_template("about.html")
 
-    
+
 @app.route('/error_no_access')
 def error_no_access():
     return render_template('error_no_access.html')
@@ -141,7 +141,7 @@ def login():
             session['user_id'] = teacher[0]
             session['is_changed'] = None
             return redirect('/lk')
-        
+
     return render_template("login.html", error = error)
 
 
@@ -245,7 +245,7 @@ def put_mark():
 
         f.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(f.filename)))
         img = cv2.imread("site_image_cache/" + f.filename, cv2.IMREAD_COLOR)
-        face = main_func(fr, spreadsheet, img)
+        face = interlayer.put_mark_recognize(img)
 
         if face == -1:
             pathList = list(paths.list_images('static'))
@@ -284,7 +284,7 @@ def undefined_students():
                 ask = 'SELECT id FROM student WHERE name = "' + q + '"'
                 t_id = cur.execute(ask).fetchone()[0]
                 pathList = list(paths.list_images('faces/' + str(t_id)))
-                put_mark_directly(t_id, spreadsheet)
+                interlayer.put_mark_direct(t_id)
                 os.replace(APP_ROOT + '/static/undefined_image_cache/' + id + '.png', APP_ROOT + '/faces/' + str(t_id) + '/' + str(len(pathList) + 1) + '.png')
             else:
                 os.remove(APP_ROOT + '/static/undefined_image_cache/' + id + '.png')

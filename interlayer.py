@@ -3,29 +3,30 @@ from spreadsheet import Spreadsheet
 import pytz
 import datetime
 
-tz = pytz.timezone('Europe/Moscow')
+class Interlayer():
 
-def start():
-    spreadsheet = Spreadsheet()
-    fr = FaceRec('faces')
-    fr.startWork()
-    return fr, spreadsheet
+    tz = pytz.timezone('Europe/Moscow')
 
-def recount():
-    fr = FaceRec('faces')
-    fr.startWork()
-    return fr
+    def __init__(self):
+        self.spreadsheet = Spreadsheet()
+        self.fr = FaceRec('faces')
+        self.fr.startWork()
 
-def main_func(fr, spreadsheet, img):
 
-    face_id = fr.recogniteTheFace(img)
+    def recount(self):
+        self.spreadsheet = Spreadsheet()
+        self.fr = FaceRec('faces')
+        self.fr.startWork()
 
-    if face_id != -1:
-        dt = datetime.datetime.now(tz)
-        spreadsheet.put_mark([dt.strftime("%d.%m.%Y"), face_id])
+    def put_mark_recognize(self, img):
+        face_id = self.fr.recogniteTheFace(img)
 
-    return face_id
+        if face_id != -1:
+            dt = datetime.datetime.now(self.tz)
+            self.spreadsheet.put_mark([dt.strftime("%d.%m.%Y"), face_id])
 
-def put_mark_directly(id, spreadsheet):
-    dt = datetime.datetime.now(tz)
-    spreadsheet.put_mark([dt.strftime("%d.%m.%Y"), id])
+        return face_id
+
+    def put_mark_direct(self, id):
+        dt = datetime.datetime.now(self.tz)
+        self.spreadsheet.put_mark([dt.strftime("%d.%m.%Y"), id])
