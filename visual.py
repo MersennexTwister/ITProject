@@ -6,29 +6,25 @@ from flask import Flask, render_template, request, redirect, session, g
 from flask_sqlalchemy import SQLAlchemy
 from imutils import paths
 from sqlalchemy import Column, exc
-import sqlite3 as sql
 
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
-from interlayer import Interlayer
+from FaceRec import FaceRec
+import pytz
+import datetime
+import sqlite3
+
+
+def get_connection(db_name):
+    conn = sqlite3.connect(db_name)
+    cur = conn.cursor()
+    return conn, cur
 
 app = Flask(__name__)
 app.secret_key = '28bee993c5553ec59b3c051d535760198f6f018ed1cca1ddadcdb570352ef05b'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-interlayer = Interlayer()
-
-def update():
-    global fr
-    if session['is_changed']:
-        interlayer.recount()
-        session['is_changed'] = False
-
-def get_connection(db_name):
-    conn = sql.connect(db_name)
-    cur = conn.cursor()
-    return conn, cur
 
 def set_path(id):
     APP_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -60,6 +56,52 @@ class Student(db.Model):
 
     def __repr__(self):
         return '<student %r>' % self.id
+
+
+class Mark(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, nullable=False)
+    data = db.Column(db.String, nullable=False)
+
+
+class Interlayer():
+    tz = pytz.timezone('Europe/Moscow')
+
+    def __init__(self):
+        self.fr = FaceRec('faces')
+        self.fr.startWork()
+
+    def put_mark(self, mark_data):
+        conn, cur = get_connection('data.db')
+        new_id = cur.execute('SELECT COUNT(id) FROM mark').fetchone()[0]
+        m = Mark(id=new_id, student_id=mark_data[1], data=mark_data[0])
+        db.session.add(m)
+        db.session.commit()
+
+    def recount(self):
+        self.fr = FaceRec('faces')
+        self.fr.startWork()
+
+    def put_mark_recognize(self, img):
+        face_id = self.fr.recogniteTheFace(img)
+
+        if face_id != -1:
+            dt = datetime.datetime.now(self.tz)
+            self.put_mark([dt.strftime("%d.%m.%Y"), face_id])
+
+        return face_id
+
+    def put_mark_direct(self, id):
+        dt = datetime.datetime.now(self.tz)
+        self.put_mark([dt.strftime("%d.%m.%Y"), id])
+
+interlayer = Interlayer()
+
+def update():
+    global fr
+    if session['is_changed']:
+        interlayer.recount()
+        session['is_changed'] = False
 
 @app.before_request
 def load_logged_in_user():
@@ -298,6 +340,62 @@ def undefined_students():
         stList.append(name[0])
 
     return render_template('undefined_students.html', fList=nameList, nameList=stList)
+
+
+@app.route('/lk/data_results/type=<string:type>', methods=['POST', 'GET'])
+def data_results(type):
+    t_id = session['user_id']
+    if t_id == None:
+        return redirect('/error_no_access')
+    if request.method == 'POST':
+        date = request.form['date-choose']
+        name = request.form['name-choose']
+        session['name-choose'] = name
+        session['date-choose'] = date
+        return redirect('/lk/data_results/type=show')
+    conn, cur = get_connection('data.db')
+    res = cur.execute('SELECT data FROM mark').fetchall()
+    dataSet = set()
+    for i in res:
+        dataSet.add(i[0])
+    res = cur.execute('SELECT student_id FROM mark').fetchall()
+    studentData = set()
+    for i in res:
+        st_id = i[0]
+        name = cur.execute(f'SELECT name FROM student WHERE id = {st_id}').fetchone()[0]
+        studentData.add(name)
+    if type != 'unknown':
+        conn, cur = get_connection('data.db')
+        ask = 'SELECT student_id, data FROM mark'
+        if session['name-choose'] != 'Выберите ученика' and session['date-choose'] == 'Выберите дату':
+            id = cur.execute(f'SELECT id FROM student WHERE name = "{session["name-choose"]}"').fetchone()[0]
+            ask += f' WHERE student_id = {id}'
+        elif session['name-choose'] == 'Выберите ученика' and session['date-choose'] != 'Выберите дату':
+            ask += f' WHERE data = "{session["date-choose"]}"'
+        elif session['name-choose'] != 'Выберите ученика' and session['date-choose'] != 'Выберите дату':
+            id = cur.execute(f'SELECT id FROM student WHERE name = "{session["name-choose"]}"').fetchone()[0]
+            ask += f' WHERE student_id = {id} AND data = "{session["date-choose"]}"'
+        res = cur.execute(ask).fetchall()
+        d = {}
+        names = set()
+        for i in res:
+            d[i[1]] = {}
+        for i in res:
+            name = cur.execute(f'SELECT name FROM student WHERE id = {i[0]}').fetchone()[0]
+            names.add(name)
+            if name not in d[i[1]]:
+                d[i[1]][name] = 0
+            d[i[1]][name] += 1
+        return render_template('results.html', type=type, dataSet=dataSet, studentData=studentData, res=d, names=names)
+    return render_template('results.html', type=type, dataSet=dataSet, studentData=studentData)
+
+
+@app.route('/lk/delete_all')
+def delete_all():
+    conn, cur = get_connection('data.db')
+    cur.execute('DELETE FROM mark')
+    conn.commit()
+    return redirect('/lk/data_results/type=unknown')
 
 
 if __name__ == "__main__":

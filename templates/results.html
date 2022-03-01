@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+
+{% block title %}
+Результаты
+{% endblock %}
+
+
+{% block body %}
+<div class="container px-4 py-5">
+<h2 style="margin-bottom: 50px;">Смотреть результаты:</h2>
+<form method="post" enctype="multipart/form-data">
+    <select name='date-choose' style="height: 30px; width: 200px; margin-bottom: 30px;">
+    <option><a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+        Выберите дату
+    </a></option>
+    {% for x in dataSet %}
+        <option><a class="dropdown-item">{{ x }}</a></option>
+    {% endfor %}
+    </select><br>
+    <select name='name-choose' style="height: 30px; width: 200px; margin-bottom: 30px;">
+    <option><a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser2" data-bs-toggle="dropdown" aria-expanded="false">
+        Выберите ученика
+    </a></option>
+    {% for x in studentData %}
+        <option><a class="dropdown-item">{{ x }}</a></option>
+    {% endfor %}
+    </select><br>
+    <button type="submit" class="btn btn-outline-success" style="margin-right: 20px;">Найти</button>
+    <a href="/lk/delete_all"><button type="button" class="btn btn-danger">Очистить базу данных</button></a>
+    {% if type != 'unknown' %}
+    <table class="table" style="margin-top: 30px;">
+        <thead>
+        <tr>
+            <th scope="col">ФИО ученика</th>
+            {% for x in res %}
+            <th scope="col">{{ x }}</th>
+            {% endfor %}
+        </tr>
+        </thead>
+        <tbody>
+            {% for el in names %}
+            <tr>
+                <th scope="row">{{ el }}</th>
+                {% for x in res %}
+                {% if el in res[x] %}
+                <td>{{ res[x][el] }}</td>
+                {% else %}
+                <td>0</td>
+                {% endif %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</form>
+</div>
+{% endblock %}
