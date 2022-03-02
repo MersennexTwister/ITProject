@@ -202,10 +202,7 @@ def lk():
     print(res)
     for i in res:
         st.append([i[0], i[1], 'lk/delete_student/student_id=' + str(i[2])])
-    ask = 'SELECT name FROM teacher WHERE id = ' + str(id)
-    name = cur.execute(ask).fetchone()[0]
-    print(name)
-    return render_template('lk.html', name=name, students=st)
+    return render_template('lk.html', students=st)
 
 
 @app.route('/lk/add_student', methods=["POST", "GET"])

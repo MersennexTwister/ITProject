@@ -8,7 +8,8 @@
 
 {% block body %}
 <div class="container px-4 py-5">
-<h2 style="margin-bottom: 50px;">Смотреть результаты:</h2>
+<h2 class="pb-2 border-bottom">Таблица с оценками</h2>
+<br>
 <form method="post" enctype="multipart/form-data">
     <select name='date-choose' style="height: 30px; width: 200px; margin-bottom: 30px;">
     <option><a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
@@ -37,7 +38,7 @@
     <button type="submit" class="btn btn-outline-success" style="margin-right: 20px;">Найти</button>
     <a href="/lk/delete_all"><button type="button" class="btn btn-danger">Очистить базу данных</button></a>
     {% if type != 'unknown' %}
-    <table class="table table-bordered table-striped" style="margin-top: 30px;">
+    <table class="table table-bordered table-striped table-sm" style="margin-top: 30px;">
         <thead class="table-dark">
         <tr>
             <th scope="col">ФИО ученика</th>
