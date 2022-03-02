@@ -15,7 +15,7 @@
         Выберите дату
     </a></option>
     {% for x in dataSet %}
-        <option><a class="dropdown-item">{{ x }}</a></option>
+        <option><a class="dropdown-item">{{ x[-1] }}</a></option>
     {% endfor %}
     </select><br>
     <select name='name-choose' style="height: 30px; width: 200px; margin-bottom: 30px;">
@@ -26,25 +26,35 @@
         <option><a class="dropdown-item">{{ x }}</a></option>
     {% endfor %}
     </select><br>
+    <select name='class-choose' style="height: 30px; width: 200px; margin-bottom: 30px;">
+    <option><a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser3" data-bs-toggle="dropdown" aria-expanded="false">
+        Выберите класс
+    </a></option>
+    {% for x in [5, 6, 7, 8, 9, 10, 11] %}
+        <option><a class="dropdown-item">{{ x }}</a></option>
+    {% endfor %}
+    </select><br>
     <button type="submit" class="btn btn-outline-success" style="margin-right: 20px;">Найти</button>
     <a href="/lk/delete_all"><button type="button" class="btn btn-danger">Очистить базу данных</button></a>
     {% if type != 'unknown' %}
-    <table class="table" style="margin-top: 30px;">
-        <thead>
+    <table class="table table-bordered table-striped" style="margin-top: 30px;">
+        <thead class="table-dark">
         <tr>
             <th scope="col">ФИО ученика</th>
-            {% for x in res %}
-            <th scope="col">{{ x }}</th>
+            <th scope="col">Класс</th>
+            {% for x in dates %}
+            <th scope="col">{{ x[-1] }}</th>
             {% endfor %}
         </tr>
         </thead>
         <tbody>
             {% for el in names %}
             <tr>
-                <th scope="row">{{ el }}</th>
-                {% for x in res %}
-                {% if el in res[x] %}
-                <td>{{ res[x][el] }}</td>
+                <th scope="row">{{ el[1] }}</th>
+                <td>{{ el[0] }}</td>
+                {% for x in dates %}
+                {% if el[1] in res[x[-1]] %}
+                <td>{{ res[x[-1]][el[1]] }}</td>
                 {% else %}
                 <td>0</td>
                 {% endif %}

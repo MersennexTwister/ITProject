@@ -350,43 +350,78 @@ def data_results(type):
     if request.method == 'POST':
         date = request.form['date-choose']
         name = request.form['name-choose']
+        cl = request.form['class-choose']
         session['name-choose'] = name
         session['date-choose'] = date
+        session['class-choose'] = cl
         return redirect('/lk/data_results/type=show')
     conn, cur = get_connection('data.db')
     res = cur.execute('SELECT data FROM mark').fetchall()
     dataSet = set()
     for i in res:
-        dataSet.add(i[0])
-    res = cur.execute('SELECT student_id FROM mark').fetchall()
+        e = list(map(int, i[0].split('.')))
+        dataSet.add((e[2], e[1], e[0], i[0]))
+    dataSet = sorted(list(dataSet))
+    res = cur.execute(f"""SELECT student_id FROM mark
+                      INNER JOIN student ON student.id = mark.student_id
+                      WHERE teacher_id = {t_id}""").fetchall()
     studentData = set()
     for i in res:
         st_id = i[0]
         name = cur.execute(f'SELECT name FROM student WHERE id = {st_id}').fetchone()[0]
         studentData.add(name)
+    studentData = sorted(list(studentData))
     if type != 'unknown':
         conn, cur = get_connection('data.db')
-        ask = 'SELECT student_id, data FROM mark'
-        if session['name-choose'] != 'Выберите ученика' and session['date-choose'] == 'Выберите дату':
-            id = cur.execute(f'SELECT id FROM student WHERE name = "{session["name-choose"]}"').fetchone()[0]
-            ask += f' WHERE student_id = {id}'
-        elif session['name-choose'] == 'Выберите ученика' and session['date-choose'] != 'Выберите дату':
-            ask += f' WHERE data = "{session["date-choose"]}"'
-        elif session['name-choose'] != 'Выберите ученика' and session['date-choose'] != 'Выберите дату':
-            id = cur.execute(f'SELECT id FROM student WHERE name = "{session["name-choose"]}"').fetchone()[0]
-            ask += f' WHERE student_id = {id} AND data = "{session["date-choose"]}"'
+        ask = f"""SELECT student_id, data FROM mark
+         INNER JOIN student ON student.id = mark.student_id
+         WHERE teacher_id = {t_id} AND """
+        ask2 = f'SELECT cl, name FROM student WHERE teacher_id = {t_id} AND '
+        if session['name-choose'] != 'Выберите ученика':
+            name = session['name-choose']
+            id = cur.execute(f'SELECT id FROM student WHERE name = "{name}" AND teacher_id = {t_id}').fetchone()[0]
+            ask += f'student_id = {id} AND '
+            ask2 += f'id = {id} AND '
+        if session['date-choose'] != 'Выберите дату':
+            date = session['date-choose']
+            ask += f'data = "{date}" AND '
+        if session['class-choose'] != 'Выберите класс':
+            cl = session['class-choose']
+            stList = cur.execute(f'SELECT id FROM student WHERE cl = {cl} AND teacher_id = {t_id}').fetchall()
+            if len(stList) != 0:
+                ask += '('
+                ask2 += '('
+                for i in stList:
+                    s_id = i[0]
+                    ask += f'student_id = {s_id} OR '
+                    ask2 += f'id = {s_id} OR '
+                ask = ask[:-4]
+                ask2 = ask2[:-4]
+                ask += ')'
+                ask2 += ')'
+            else:
+                ask += 'student_id = 4 AND student_id = 5'
+                ask2 += 'id = 4 AND id = 5'
+        if ask[-5:] == ' AND ':
+            ask = ask[:-5]
+        if ask2[-5:] == ' AND ':
+            ask2 = ask2[:-5]
         res = cur.execute(ask).fetchall()
         d = {}
-        names = set()
+        dates = set()
         for i in res:
+            e = list(map(int, i[1].split('.')))
+            dates.add((e[2], e[1], e[0], i[1]))
             d[i[1]] = {}
+        names = cur.execute(ask2).fetchall()
         for i in res:
             name = cur.execute(f'SELECT name FROM student WHERE id = {i[0]}').fetchone()[0]
-            names.add(name)
             if name not in d[i[1]]:
                 d[i[1]][name] = 0
             d[i[1]][name] += 1
-        return render_template('results.html', type=type, dataSet=dataSet, studentData=studentData, res=d, names=names)
+        names.sort()
+        dates = sorted(list(dates))
+        return render_template('results.html', type=type, dataSet=dataSet, studentData=studentData, res=d, names=names, dates=dates)
     return render_template('results.html', type=type, dataSet=dataSet, studentData=studentData)
 
 
