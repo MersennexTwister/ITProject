@@ -2,7 +2,7 @@ import requests as rqs
 import os
 import RPi.GPIO as GPIO
 import time
-from picamera import PiCamera
+import picamera
 
 BUTTON = 8
 DELAY_SEC = 0.05
@@ -16,19 +16,21 @@ LOGIN = 'testlogin44'
 PASSWORD = 'testpassword44'
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 
-camera = PiCamera()
+camera = picamera.PiCamera()
+camera.resolution = (2160, 1440)
 
 def image_request():
     r = rqs.post(URL + 'login', data={'login': LOGIN, 'password': PASSWORD})
     
-    camera.capture(APP_ROOT + '/rpi_image_cache/cached.png')
-    img = open(APP_ROOT + '/rpi_image_cache/cached.png', 'rb')
+    camera.capture(APP_ROOT + '/rpi_image_cache/cached.jpg')
+    
+    img = open(APP_ROOT + '/rpi_image_cache/cached.jpg', 'rb')
 
     files = {'photo': img}
     r = rqs.post(URL + 'lk/put_mark', files=files)
 
     img.close()
-    os.remove(APP_ROOT +'/rpi_image_cache/' + 'cached.png')
+    os.remove(APP_ROOT +'/rpi_image_cache/' + 'cached.jpg')
 
     print(r.text)
 
@@ -42,6 +44,3 @@ if __name__ == '__main__':
                 print("Button pressed")
                 image_request() 
         prev = cur
-    
-
-    
