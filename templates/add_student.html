@@ -16,12 +16,10 @@
       </div>
       <br>
       <input type="text" name="class" id="class" class="form-control" placeholder="Класс обучения"><br>
-      <div class="input-group">
-        <input name="photo1" id="photo1" type="file" class="form-control" placeholder="Фото ученика 1">
-        <input name="photo2" id="photo2" type="file" class="form-control" placeholder="Фото ученика 2">
-        <input name="photo3" id="photo3" type="file" class="form-control" placeholder="Фото ученика 3">
-      </div>
-      <br>
+        {% for i in photo_list %}
+          <input name={{ i }} id={{ i }} type="file" class="form-control">
+          <br>
+        {% endfor %}
       <button type="submit" class="btn btn-danger">Добавить</button>
     </form>
   </div>

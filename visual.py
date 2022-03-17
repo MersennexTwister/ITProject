@@ -181,6 +181,7 @@ def login():
 
         if error == None:
             session['user_id'] = teacher[0]
+            session['add_student_photo_num'] = 3
             session['is_changed'] = None
             return redirect('/lk')
 
@@ -211,6 +212,11 @@ def add_student():
     if id is None:
         return redirect('/error_no_access')
 
+    photo_list = []
+    for i in range(session['add_student_photo_num']):
+        photo_list.append('photo' + str(i))
+    print(photo_list)
+
     if request.method == "POST":
         name = request.form['surname'] + ' ' + request.form['name'] + ' ' + request.form['patronymic']
         cl = request.form['class']
@@ -219,24 +225,22 @@ def add_student():
         inf = cur.execute(ask).fetchone()[0]
         if inf > 0:
             return 'Ученик уже есть у вас в классе!'
-        photo1, photo2, photo3 = request.files['photo1'], request.files['photo2'], request.files['photo3']
+        
         ask = "SELECT COUNT(id) FROM student"
         inf = cur.execute(ask).fetchone()[0] + 1
         set_path(inf)
-        photo1.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(photo1.filename)))
-        photo2.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(photo2.filename)))
-        photo3.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(photo3.filename)))
+
+        for photo in request.files:
+            request.files[photo].save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(request.files[photo].filename)))
 
         t = Student(id=inf, name=name, cl = cl, teacher_id=id)
-
 
         db.session.add(t)
         db.session.commit()
         session['is_changed'] = True
         return redirect('/lk')
 
-
-    return render_template('add_student.html')
+    return render_template('add_student.html', photo_list=photo_list)
 
 
 @app.route('/lk/delete_student/student_id=<int:st_id>', methods=["POST", "GET"])
