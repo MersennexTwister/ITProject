@@ -225,34 +225,44 @@ def add_student():
     id = session['user_id']
     if id is None:
         return redirect('/error_no_access')
+
     photo_list = []
-    for i in range(session['add_student_photo_num']):
-        photo_list.append('photo' + str(i))
-    print(photo_list)
+    def form_photo_list():
+        photo_list.clear()
+        for i in range(session['add_student_photo_num']):
+            photo_list.append('photo' + str(i))
+    form_photo_list()
+    
     if request.method == "POST":
-        name = request.form['surname'] + ' ' + request.form['name'] + ' ' + request.form['patronymic']
-        cl = request.form['class']
-        conn, cur = get_connection('data.db')
-        ask = "SELECT COUNT(id) FROM student WHERE name = '" + name + "' AND teacher_id = " + str(id)
-        inf = cur.execute(ask).fetchone()[0]
-        if inf > 0:
-            return 'Ученик уже есть у вас в классе!'
-        ask = "SELECT COUNT(id) FROM student"
-        inf = cur.execute(ask).fetchone()[0] + 1
-        set_path(inf)
+        if 'add_student' in request.form:
+            name = request.form['surname'] + ' ' + request.form['name'] + ' ' + request.form['patronymic']
+            cl = request.form['class']
+            conn, cur = get_connection('data.db')
+            ask = "SELECT COUNT(id) FROM student WHERE name = '" + name + "' AND teacher_id = " + str(id)
+            inf = cur.execute(ask).fetchone()[0]
+            if inf > 0:
+                return 'Ученик уже есть у вас в классе!'
+            ask = "SELECT COUNT(id) FROM student"
+            inf = cur.execute(ask).fetchone()[0] + 1
+            set_path(inf)
 
-        for photo in request.files:
-            request.files[photo].save(
-                os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(request.files[photo].filename)))
+            for photo in request.files:
+                request.files[photo].save(
+                    os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(request.files[photo].filename)))
 
-        t = Student(id=inf, name=name, cl=cl, teacher_id=id)
+            t = Student(id=inf, name=name, cl=cl, teacher_id=id)
+            
+            db.session.add(t)
+            db.session.commit()
+            session['is_changed'] = True
+            return redirect('/lk')
 
-
-        db.session.add(t)
-        db.session.commit()
-        session['is_changed'] = True
-        return redirect('/lk')
-
+        elif 'increase_photo_num' in request.form:
+            session['add_student_photo_num'] = session['add_student_photo_num'] + 1
+            form_photo_list()
+        elif 'decrease_photo_num' in request.form:
+            session['add_student_photo_num'] = session['add_student_photo_num'] - 1
+            form_photo_list()
 
     return render_template('add_student.html', photo_list=photo_list)
 
@@ -481,10 +491,15 @@ def data_results(type):
 
 @app.route('/lk/delete_all')
 def delete_all():
-    conn, cur = get_connection('data.db')
-    cur.execute('DELETE FROM mark')
-    conn.commit()
-    return redirect('/lk/data_results/type=unknown')
+    t_id = session['user_id']
+    if t_id == None:
+        return redirect('/error_no_access')
+    if request.method == 'POST':
+        conn, cur = get_connection('data.db')
+        cur.execute('DELETE FROM mark')
+        conn.commit()
+        return redirect('/lk/data_results/type=unknown')
+    return render_template('delete_all.html')
 
 
 if __name__ == "__main__":

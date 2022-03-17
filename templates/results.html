@@ -10,8 +10,10 @@
 <div class="container px-4 py-5">
 <h2 class="pb-2 border-bottom">Таблица с оценками</h2>
 <br>
+
 <form method="post" enctype="multipart/form-data">
-    <select name='date-choose' style="height: 30px; width: 200px; margin-bottom: 30px;">
+    <div class="input-group">
+    <select name='date-choose' class="form-select">
     <option><a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
         Выберите дату
     </a></option>
@@ -19,7 +21,7 @@
         <option><a class="dropdown-item">{{ x[-1] }}</a></option>
     {% endfor %}
     </select><br>
-    <select name='name-choose' style="height: 30px; width: 200px; margin-bottom: 30px;">
+    <select name='name-choose' class="form-select">
     <option><a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser2" data-bs-toggle="dropdown" aria-expanded="false">
         Выберите ученика
     </a></option>
@@ -27,7 +29,7 @@
         <option><a class="dropdown-item">{{ x }}</a></option>
     {% endfor %}
     </select><br>
-    <select name='class-choose' style="height: 30px; width: 200px; margin-bottom: 30px;">
+    <select name='class-choose' class="form-select">
     <option><a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser3" data-bs-toggle="dropdown" aria-expanded="false">
         Выберите класс
     </a></option>
@@ -35,14 +37,16 @@
         <option><a class="dropdown-item">{{ x }}</a></option>
     {% endfor %}
     </select><br>
-    <button type="submit" class="btn btn-outline-success" style="margin-right: 20px;">Найти</button>
-    <a href="/lk/delete_all"><button type="button" class="btn btn-danger">Очистить базу данных</button></a>
+    </div>
+    <br>
+    <button type="submit" class="btn btn-success" style="margin-right: 20px;">Найти</button>
+    <a href="/lk/delete_all"><button type="button" class="btn btn-outline-danger">Очистить таблицу</button></a>
     {% if type != 'unknown' %}
     <table class="table table-bordered table-striped table-sm" style="margin-top: 30px;">
-        <thead class="table-dark">
+        <thead>
         <tr>
-            <th scope="col">ФИО ученика</th>
             <th scope="col">Класс</th>
+            <th scope="col">ФИО ученика</th>
             {% for x in dates %}
             <th scope="col">{{ x[-1] }}</th>
             {% endfor %}
@@ -51,8 +55,8 @@
         <tbody>
             {% for el in names %}
             <tr>
-                <th scope="row">{{ el[1] }}</th>
                 <td>{{ el[0] }}</td>
+                <th scope="row">{{ el[1] }}</th>
                 {% for x in dates %}
                 {% if el[1] in resplus[x[-1]] and el[1] in resminus[x[-1]] %}
                 <td>{{ resplus[x[-1]][el[1]] }}/{{ resminus[x[-1]][el[1]] }}</td>
