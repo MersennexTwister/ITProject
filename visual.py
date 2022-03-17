@@ -63,6 +63,17 @@ class Mark(db.Model):
     student_id = db.Column(db.Integer, nullable=False)
     data = db.Column(db.String, nullable=False)
 
+    def __repr__(self):
+        return '<mark %r>' % self.id
+
+class Minus(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, nullable=False)
+    data = db.Column(db.String, nullable=False)
+
+    def __repr__(self):
+        return '<minus %r>' % self.id
+
 
 class Interlayer():
     tz = pytz.timezone('Europe/Moscow')
@@ -74,7 +85,10 @@ class Interlayer():
     def put_mark(self, mark_data):
         conn, cur = get_connection('data.db')
         new_id = cur.execute('SELECT COUNT(id) FROM mark').fetchone()[0]
-        m = Mark(id=new_id, student_id=mark_data[1], data=mark_data[0])
+        if mark_data[2]:
+            m = Mark(id=new_id, student_id=mark_data[1], data=mark_data[0])
+        else:
+            m = Minus(id=new_id, student_id=mark_data[1], data=mark_data[0])
         db.session.add(m)
         db.session.commit()
 
@@ -82,18 +96,18 @@ class Interlayer():
         self.fr = FaceRec('faces')
         self.fr.startWork()
 
-    def put_mark_recognize(self, img):
+    def put_mark_recognize(self, img, type):
         face_id = self.fr.recogniteTheFace(img)
 
         if face_id != -1:
             dt = datetime.datetime.now(self.tz)
-            self.put_mark([dt.strftime("%d.%m.%Y"), face_id])
+            self.put_mark([dt.strftime("%d.%m.%Y"), face_id, type])
 
         return face_id
 
-    def put_mark_direct(self, id):
+    def put_mark_direct(self, id, type):
         dt = datetime.datetime.now(self.tz)
-        self.put_mark([dt.strftime("%d.%m.%Y"), id])
+        self.put_mark([dt.strftime("%d.%m.%Y"), id, type])
 
 interlayer = Interlayer()
 
@@ -211,12 +225,10 @@ def add_student():
     id = session['user_id']
     if id is None:
         return redirect('/error_no_access')
-
     photo_list = []
     for i in range(session['add_student_photo_num']):
         photo_list.append('photo' + str(i))
     print(photo_list)
-
     if request.method == "POST":
         name = request.form['surname'] + ' ' + request.form['name'] + ' ' + request.form['patronymic']
         cl = request.form['class']
@@ -225,20 +237,22 @@ def add_student():
         inf = cur.execute(ask).fetchone()[0]
         if inf > 0:
             return 'Ученик уже есть у вас в классе!'
-        
         ask = "SELECT COUNT(id) FROM student"
         inf = cur.execute(ask).fetchone()[0] + 1
         set_path(inf)
 
         for photo in request.files:
-            request.files[photo].save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(request.files[photo].filename)))
+            request.files[photo].save(
+                os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(request.files[photo].filename)))
 
-        t = Student(id=inf, name=name, cl = cl, teacher_id=id)
+        t = Student(id=inf, name=name, cl=cl, teacher_id=id)
+
 
         db.session.add(t)
         db.session.commit()
         session['is_changed'] = True
         return redirect('/lk')
+
 
     return render_template('add_student.html', photo_list=photo_list)
 
@@ -280,6 +294,7 @@ def error_recognise():
 def put_mark():
     if request.method == 'POST':
         f = request.files['photo']
+        s = request.form['mark']
 
         APP_ROOT = os.path.dirname(os.path.abspath(__file__))
         UPLOAD_FOLD = 'site_image_cache'
@@ -288,7 +303,7 @@ def put_mark():
 
         f.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(f.filename)))
         img = cv2.imread("site_image_cache/" + f.filename, cv2.IMREAD_COLOR)
-        face = interlayer.put_mark_recognize(img)
+        face = interlayer.put_mark_recognize(img, s == "+")
 
         if face == -1:
             pathList = list(paths.list_images('static'))
@@ -316,18 +331,19 @@ def undefined_students():
     nameList = []
     for p in pathList:
         fname = p.split(os.path.sep)[-1]
-        nameList.append(('undefined_image_cache/' + fname, fname[:fname.find('.')]))
+        nameList.append(('undefined_image_cache/' + fname, fname[:fname.find('.')], fname[:fname.find('.')] + 'mark'))
 
     if request.method == 'POST':
-        for (p, id) in nameList:
+        for (p, id, idmark) in nameList:
             q = request.form[id]
+            s = request.form[idmark]
             APP_ROOT = os.path.dirname(os.path.abspath(__file__))
             if q != 'Ошибка':
                 conn, cur = get_connection('data.db')
                 ask = 'SELECT id FROM student WHERE name = "' + q + '"'
                 t_id = cur.execute(ask).fetchone()[0]
                 pathList = list(paths.list_images('faces/' + str(t_id)))
-                interlayer.put_mark_direct(t_id)
+                interlayer.put_mark_direct(t_id, s == "+")
                 os.replace(APP_ROOT + '/static/undefined_image_cache/' + id + '.png', APP_ROOT + '/faces/' + str(t_id) + '/' + str(len(pathList) + 1) + '.png')
             else:
                 os.remove(APP_ROOT + '/static/undefined_image_cache/' + id + '.png')
@@ -357,7 +373,7 @@ def data_results(type):
         session['class-choose'] = cl
         return redirect('/lk/data_results/type=show')
     conn, cur = get_connection('data.db')
-    res = cur.execute('SELECT data FROM mark').fetchall()
+    res = cur.execute('SELECT data FROM mark').fetchall() + cur.execute('SELECT data FROM minus').fetchall()
     dataSet = set()
     for i in res:
         e = list(map(int, i[0].split('.')))
@@ -365,7 +381,11 @@ def data_results(type):
     dataSet = sorted(list(dataSet))
     res = cur.execute(f"""SELECT student_id FROM mark
                       INNER JOIN student ON student.id = mark.student_id
+                      WHERE teacher_id = {t_id}""").fetchall() + \
+          cur.execute(f"""SELECT student_id FROM minus
+                      INNER JOIN student ON student.id = minus.student_id
                       WHERE teacher_id = {t_id}""").fetchall()
+
     studentData = set()
     for i in res:
         st_id = i[0]
@@ -422,7 +442,40 @@ def data_results(type):
             d[i[1]][name] += 1
         names.sort()
         dates = sorted(list(dates))
-        return render_template('results.html', type=type, dataSet=dataSet, studentData=studentData, res=d, names=names, dates=dates)
+        ask = f"""SELECT student_id, data FROM minus
+                 INNER JOIN student ON student.id = minus.student_id
+                 WHERE teacher_id = {t_id} AND """
+        if session['name-choose'] != 'Выберите ученика':
+            name = session['name-choose']
+            id = cur.execute(f'SELECT id FROM student WHERE name = "{name}" AND teacher_id = {t_id}').fetchone()[0]
+            ask += f'student_id = {id} AND '
+        if session['date-choose'] != 'Выберите дату':
+            date = session['date-choose']
+            ask += f'data = "{date}" AND '
+        if session['class-choose'] != 'Выберите класс':
+            cl = session['class-choose']
+            stList = cur.execute(f'SELECT id FROM student WHERE cl = {cl} AND teacher_id = {t_id}').fetchall()
+            if len(stList) != 0:
+                ask += '('
+                for i in stList:
+                    s_id = i[0]
+                    ask += f'student_id = {s_id} OR '
+                ask = ask[:-4]
+                ask += ')'
+            else:
+                ask += 'student_id = 4 AND student_id = 5'
+        if ask[-5:] == ' AND ':
+            ask = ask[:-5]
+        res = cur.execute(ask).fetchall()
+        d2 = {}
+        for i in res:
+            d2[i[1]] = {}
+        for i in res:
+            name = cur.execute(f'SELECT name FROM student WHERE id = {i[0]}').fetchone()[0]
+            if name not in d2[i[1]]:
+                d2[i[1]][name] = 0
+            d2[i[1]][name] += 1
+        return render_template('results.html', type=type, dataSet=dataSet, studentData=studentData, resplus=d, resminus=d2, names=names, dates=dates)
     return render_template('results.html', type=type, dataSet=dataSet, studentData=studentData)
 
 

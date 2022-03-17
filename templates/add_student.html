@@ -16,10 +16,10 @@
       </div>
       <br>
       <input type="text" name="class" id="class" class="form-control" placeholder="Класс обучения"><br>
-        {% for i in photo_list %}
+      {% for i in photo_list %}
           <input name={{ i }} id={{ i }} type="file" class="form-control">
           <br>
-        {% endfor %}
+      {% endfor %}
       <button type="submit" class="btn btn-danger">Добавить</button>
     </form>
   </div>

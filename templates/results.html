@@ -54,10 +54,14 @@
                 <th scope="row">{{ el[1] }}</th>
                 <td>{{ el[0] }}</td>
                 {% for x in dates %}
-                {% if el[1] in res[x[-1]] %}
-                <td>{{ res[x[-1]][el[1]] }}</td>
+                {% if el[1] in resplus[x[-1]] and el[1] in resminus[x[-1]] %}
+                <td>{{ resplus[x[-1]][el[1]] }}/{{ resminus[x[-1]][el[1]] }}</td>
+                {% elif el[1] in resplus[x[-1]] %}
+                <td>{{ resplus[x[-1]][el[1]] }}/0</td>
+                {% elif el[1] in resminus[x[-1]] %}
+                <td>0/{{ resminus[x[-1]][el[1]] }}</td>
                 {% else %}
-                <td>0</td>
+                <td>0/0</td>
                 {% endif %}
                 {% endfor %}
             </tr>
