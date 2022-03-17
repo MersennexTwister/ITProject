@@ -1,13 +1,13 @@
 import requests as rqs
-import os, cv2
-import PIL.Image
-import RPi.GPIO as GPIO # Import Raspberry Pi GPIO library
+import os
+import RPi.GPIO as GPIO
 import time
+import picamera
 
 BUTTON = 8
 DELAY_SEC = 0.05
-GPIO.setwarnings(False) # Ignore warning for now
-GPIO.setmode(GPIO.BOARD) # Use physical pin numbering
+GPIO.setwarnings(False)
+GPIO.setmode(GPIO.BOARD)
 GPIO.setup(BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 prev, cur = False, False
 
@@ -16,31 +16,26 @@ LOGIN = 'testlogin44'
 PASSWORD = 'testpassword44'
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 
-def image_request():    
-    video_capture = cv2.VideoCapture(0)
-    ret, rgb = video_capture.read()
-    video_capture.release()
-    
+camera = picamera.PiCamera()
+camera.resolution = (2160, 1440)
 
+def image_request():
     r = rqs.post(URL + 'login', data={'login': LOGIN, 'password': PASSWORD})
-    print(r.text)
-
-
-    img = PIL.Image.fromarray(rgb, 'RGB')
-
-    img.save(APP_ROOT + '/rpi_image_cache/cached.png')
-    img = open(APP_ROOT + '/rpi_image_cache/cached.png', 'rb')
+    
+    camera.capture(APP_ROOT + '/rpi_image_cache/cached.jpg')
+    
+    img = open(APP_ROOT + '/rpi_image_cache/cached.jpg', 'rb')
 
     files = {'photo': img}
     r = rqs.post(URL + 'lk/put_mark', files=files)
 
     img.close()
-    os.remove(APP_ROOT +'/rpi_image_cache/' + 'cached.png')
+    os.remove(APP_ROOT +'/rpi_image_cache/' + 'cached.jpg')
 
     print(r.text)
 
 if __name__ == '__main__':
-    while True: # Run forever
+    while True:
         cur = GPIO.input(BUTTON)
         if not prev and cur:
             time.sleep(DELAY_SEC)
@@ -49,6 +44,3 @@ if __name__ == '__main__':
                 print("Button pressed")
                 image_request() 
         prev = cur
-    
-
-    
