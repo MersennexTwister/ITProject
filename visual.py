@@ -84,7 +84,7 @@ class Interlayer():
 
     def put_mark(self, mark_data):
         conn, cur = get_connection('data.db')
-        new_id = cur.execute('SELECT COUNT(id) FROM mark').fetchone()[0]
+        new_id = cur.execute('SELECT COUNT(id) FROM mark').fetchone()[0] + cur.execute('SELECT COUNT(id) FROM minus').fetchone()[0]
         if mark_data[2]:
             m = Mark(id=new_id, student_id=mark_data[1], data=mark_data[0])
         else:
