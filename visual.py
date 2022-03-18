@@ -225,14 +225,12 @@ def add_student():
     id = session['user_id']
     if id is None:
         return redirect('/error_no_access')
-
     photo_list = []
     def form_photo_list():
         photo_list.clear()
         for i in range(session['add_student_photo_num']):
             photo_list.append('photo' + str(i))
     form_photo_list()
-    
     if request.method == "POST":
         if 'add_student' in request.form:
             name = request.form['surname'] + ' ' + request.form['name'] + ' ' + request.form['patronymic']
@@ -251,7 +249,7 @@ def add_student():
                     os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(request.files[photo].filename)))
 
             t = Student(id=inf, name=name, cl=cl, teacher_id=id)
-            
+
             db.session.add(t)
             db.session.commit()
             session['is_changed'] = True
@@ -263,6 +261,7 @@ def add_student():
         elif 'decrease_photo_num' in request.form:
             session['add_student_photo_num'] = session['add_student_photo_num'] - 1
             form_photo_list()
+
 
     return render_template('add_student.html', photo_list=photo_list)
 
@@ -450,15 +449,15 @@ def data_results(type):
             if name not in d[i[1]]:
                 d[i[1]][name] = 0
             d[i[1]][name] += 1
-        names.sort()
-        dates = sorted(list(dates))
         ask = f"""SELECT student_id, data FROM minus
                  INNER JOIN student ON student.id = minus.student_id
                  WHERE teacher_id = {t_id} AND """
+        ask2 = f'SELECT cl, name FROM student WHERE teacher_id = {t_id} AND '
         if session['name-choose'] != 'Выберите ученика':
             name = session['name-choose']
             id = cur.execute(f'SELECT id FROM student WHERE name = "{name}" AND teacher_id = {t_id}').fetchone()[0]
             ask += f'student_id = {id} AND '
+            ask2 += f'id = {id} AND '
         if session['date-choose'] != 'Выберите дату':
             date = session['date-choose']
             ask += f'data = "{date}" AND '
@@ -467,24 +466,36 @@ def data_results(type):
             stList = cur.execute(f'SELECT id FROM student WHERE cl = {cl} AND teacher_id = {t_id}').fetchall()
             if len(stList) != 0:
                 ask += '('
+                ask2 += '('
                 for i in stList:
                     s_id = i[0]
                     ask += f'student_id = {s_id} OR '
+                    ask2 += f'id = {s_id} OR '
                 ask = ask[:-4]
+                ask2 = ask2[:-4]
                 ask += ')'
+                ask2 += ')'
             else:
                 ask += 'student_id = 4 AND student_id = 5'
+                ask2 += 'id = 4 AND id = 5'
         if ask[-5:] == ' AND ':
             ask = ask[:-5]
+        if ask2[-5:] == ' AND ':
+            ask2 = ask2[:-5]
         res = cur.execute(ask).fetchall()
         d2 = {}
         for i in res:
+            e = list(map(int, i[1].split('.')))
+            dates.add((e[2], e[1], e[0], i[1]))
             d2[i[1]] = {}
+        names += cur.execute(ask2).fetchall()
         for i in res:
             name = cur.execute(f'SELECT name FROM student WHERE id = {i[0]}').fetchone()[0]
             if name not in d2[i[1]]:
                 d2[i[1]][name] = 0
             d2[i[1]][name] += 1
+        names = sorted(list(set(names)))
+        dates = sorted(list(dates))
         return render_template('results.html', type=type, dataSet=dataSet, studentData=studentData, resplus=d, resminus=d2, names=names, dates=dates)
     return render_template('results.html', type=type, dataSet=dataSet, studentData=studentData)
 
