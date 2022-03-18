@@ -211,12 +211,12 @@ def lk():
         update()
         return redirect('/lk')
     conn, cur = get_connection('data.db')
-    ask = 'SELECT name, cl, id FROM student WHERE teacher_id = ' + str(id) + ' ORDER BY cl ASC'
-    res = cur.execute(ask).fetchall()
+    ask = 'SELECT cl, name, id FROM student WHERE teacher_id = ' + str(id)
+    res = sorted(cur.execute(ask).fetchall())
     st = []
     print(res)
     for i in res:
-        st.append([i[0], i[1], 'lk/delete_student/student_id=' + str(i[2])])
+        st.append([i[1], i[0], 'lk/delete_student/student_id=' + str(i[2])])
     return render_template('lk.html', students=st)
 
 
