@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+
+{% block title %}
+Личный кабинет
+{% endblock %}
+
+
+{% block body %}
+<div class="container px-4 py-5">
+    <h2 class="pb-2 border-bottom">Редактировать профиль: {{ st_name }}</h2><br>
+    <form method="post" enctype = "multipart/form-data">
+        <div class="input-group has-validation" style="width: 400px">
+            <span class="input-group-text" style="width: 100px">Фамилия</span>
+            <input type="text" class="form-control" name="surname" placeholder="Surname" value={{ nameList[0] }}>
+        </div><br>
+        <div class="input-group has-validation" style="width: 400px">
+            <span class="input-group-text" style="width: 100px">Имя</span>
+            <input type="text" class="form-control" name="name" placeholder="Name" value={{ nameList[1] }}>
+        </div><br>
+        <div class="input-group has-validation" style="width: 400px">
+            <span class="input-group-text" style="width: 100px">Отчество</span>
+            <input type="text" class="form-control" name="patronymic" placeholder="Patronymic" value={{ nameList[2] }}>
+        </div><br>
+          <select class="form-select" id="cl" name="cl" required="" style="width: 200px">
+            <option>{{ st_class }}</option>
+            {% if st_class != "5 класс" %}
+            <option>5 класс</option>
+            {% endif %}
+            {% if st_class != "6 класс" %}
+            <option>6 класс</option>
+            {% endif %}
+              {% if st_class != "7 класс" %}
+            <option>7 класс</option>
+            {% endif %}
+              {% if st_class != "8 класс" %}
+            <option>8 класс</option>
+            {% endif %}
+              {% if st_class != "9 класс" %}
+            <option>9 класс</option>
+            {% endif %}
+              {% if st_class != "10 класс" %}
+            <option>10 класс</option>
+            {% endif %}
+              {% if st_class != "11 класс" %}
+            <option>11 класс</option>
+            {% endif %}
+          </select><br><br>
+        <button type="submit" class="btn btn-success">Обновить</button>
+    </form>
+</div>
+{% endblock %}

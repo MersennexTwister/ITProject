@@ -216,7 +216,7 @@ def lk():
     st = []
     print(res)
     for i in res:
-        st.append([i[1], i[0], 'lk/delete_student/student_id=' + str(i[2])])
+        st.append([i[1], i[0], 'lk/delete_student/student_id=' + str(i[2]), 'lk/edit_student/student_id=' + str(i[2])])
     return render_template('lk.html', students=st)
 
 
@@ -500,7 +500,7 @@ def data_results(type):
     return render_template('results.html', type=type, dataSet=dataSet, studentData=studentData)
 
 
-@app.route('/lk/delete_all')
+@app.route('/lk/delete_all', methods=['POST', 'GET'])
 def delete_all():
     t_id = session['user_id']
     if t_id == None:
@@ -512,6 +512,21 @@ def delete_all():
         return redirect('/lk/data_results/type=unknown')
     return render_template('delete_all.html')
 
+@app.route('/lk/edit_student/student_id=<int:st_id>', methods=['POST', 'GET'])
+def edit_student(st_id):
+    t_id = session['user_id']
+    if t_id == None:
+        return redirect('/error_no_access')
+    conn, cur = get_connection('data.db')
+    if request.method == 'POST':
+        cur.execute(f'UPDATE student SET name = "{request.form["surname"] + " " + request.form["name"] + " " + request.form["patronymic"]}" WHERE teacher_id = {t_id} AND id = {st_id}')
+        cur.execute(f'UPDATE student SET cl = {int(request.form["cl"].split()[0])} WHERE teacher_id = {t_id} AND id = {st_id}')
+        conn.commit()
+        return redirect('/lk')
+    name = cur.execute(f'SELECT name FROM student WHERE teacher_id = {t_id} AND id = {st_id}').fetchone()[0]
+    cl = cur.execute(f'SELECT cl FROM student WHERE teacher_id = {t_id} AND id = {st_id}').fetchone()[0]
+    nameList = name.split()
+    return render_template('enter_student.html', st_name=name, st_class=f"{cl} класс", nameList=nameList)
 
 if __name__ == "__main__":
     app.run(debug=True)
