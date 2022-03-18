@@ -53,13 +53,13 @@ if __name__ == '__main__':
 
         if not prev_p and cur_p:
             time.sleep(DELAY_SEC)
-            cur = GPIO.input(BUTTON_P)
-            if not prev_p and prev_p:
+            cur_p = GPIO.input(BUTTON_P)
+            if not prev_p and cur_p:
                 print("Button + pressed")
                 image_request('+') 
         elif not prev_m and cur_m:
             time.sleep(DELAY_SEC)
-            cur = GPIO.input(BUTTON_M)
+            cur_m = GPIO.input(BUTTON_M)
             if not prev_m and cur_m:
                 print("Button - pressed")
                 image_request('-') 
