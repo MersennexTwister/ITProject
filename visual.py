@@ -259,7 +259,7 @@ def add_student():
             session['add_student_photo_num'] = session['add_student_photo_num'] + 1
             form_photo_list()
         elif 'decrease_photo_num' in request.form:
-            session['add_student_photo_num'] = session['add_student_photo_num'] - 1
+            session['add_student_photo_num'] = max(1, session['add_student_photo_num'] - 1)
             form_photo_list()
 
 
