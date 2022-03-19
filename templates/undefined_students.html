@@ -43,13 +43,16 @@
                             </select>
                         </td>
                         <td>
-                          <select name={{ el[2] }} class="form-select">
-                          <option><a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser2" data-bs-toggle="dropdown" aria-expanded="false">
+                          <select name={{ el[2] }} class="form-select" required>
+                          <option value><a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser2" data-bs-toggle="dropdown" aria-expanded="false">
                               Оценка
                           </a></option>
                           <option><a class="dropdown-item">+</a></option>
                           <option><a class="dropdown-item">-</a></option>
                           </select>
+                          <div class="invalid-feedback">
+                            Please provide a valid state.
+                          </div>
                         </td>
                     </tr>
                     {% endfor %}
