@@ -529,4 +529,4 @@ def edit_student(st_id):
     return render_template('enter_student.html', st_name=name, st_class=f"{cl} класс", nameList=nameList)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='0.0.0.0')
