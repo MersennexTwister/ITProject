@@ -372,7 +372,7 @@ def data_results(type):
         session['class-choose'] = cl
         return redirect('/lk/data_results/type=show')
     conn, cur = get_connection(APP_ROOT + 'data.db')
-    res = cur.execute('SELECT data FROM mark').fetchall() + cur.execute('SELECT data FROM minus').fetchall()
+    res = cur.execute(f'SELECT data FROM mark INNER JOIN student ON student.id = mark.student_id WHERE teacher_id = {t_id}').fetchall() + cur.execute(f'SELECT data FROM minus INNER JOIN student ON student.id = minus.student_id WHERE teacher_id = {t_id}').fetchall()
     dataSet = set()
     for i in res:
         e = list(map(int, i[0].split('.')))
@@ -497,8 +497,8 @@ def delete_all():
         return redirect('/error_no_access')
     if request.method == 'POST':
         conn, cur = get_connection(APP_ROOT + 'data.db')
-        cur.execute('DELETE FROM mark')
-        cur.execute('DELETE FROM minus')
+        cur.execute(f'DELETE FROM mark WHERE student_id IN(SELECT student_id FROM mark INNER JOIN student ON student.id = mark.student_id WHERE teacher_id = {t_id})')
+        cur.execute(f'DELETE FROM minus WHERE student_id IN(SELECT student_id FROM minus INNER JOIN student ON student.id = minus.student_id WHERE teacher_id = {t_id})')
         conn.commit()
         return redirect('/lk/data_results/type=unknown')
     return render_template('delete_all.html')
