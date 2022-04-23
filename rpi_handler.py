@@ -15,7 +15,7 @@ prev_m, cur_m = False, False
 URL = 'https://mars-project.ru/'
 LOGIN = 'testlogin44'
 PASSWORD = 'testpassword44'
-APP_ROOT = '/var/www/mars-project.ru'
+APP_ROOT = '/home/pi/project-mars'
 
 camera = picamera.PiCamera()
 
