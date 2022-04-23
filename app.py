@@ -230,7 +230,7 @@ def add_student():
             inf = cur.execute(ask).fetchone()[0]
             if inf > 0:
                 return 'Ученик уже есть у вас в классе!'
-            ask = "SELECT COUNT(id) FROM student"
+            ask = "SELECT MAX(id) FROM student"
             inf = cur.execute(ask).fetchone()[0] + 1
 
             UPLOAD_FOLD = 'faces/' + str(inf)
