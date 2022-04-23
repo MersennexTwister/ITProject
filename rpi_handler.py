@@ -12,10 +12,10 @@ DELAY_SEC = 0.05
 prev_p, cur_p = False, False
 prev_m, cur_m = False, False
 
-URL = 'https://umarnurmatov.pythonanywhere.com/'
+URL = 'https://mars-project.ru/'
 LOGIN = 'testlogin44'
 PASSWORD = 'testpassword44'
-APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+APP_ROOT = '/var/www/mars-project.ru'
 
 camera = picamera.PiCamera()
 
