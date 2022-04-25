@@ -54,10 +54,10 @@ def image_request(mark):
     s = r.text
     ind = s.find('<b>')
     if ind == -1:
-        Label(win, text= "Мы не смогли распознать изображение", font=('Helvetica 20 bold')).pack(pady=20)
+        Label(master, text= "Мы не смогли распознать изображение", font=('Helvetica 20 bold')).pack(pady=20)
     else:
         ind2 = s.find('</b>')
-        Label(win, text= s[ind1+2:ind2], font=('Helvetica 20 bold')).pack(pady=20)
+        Label(master, text= s[ind1+2:ind2], font=('Helvetica 20 bold')).pack(pady=20)
     master.after(3000,lambda:master.destroy())
     master.mainloop()
 
