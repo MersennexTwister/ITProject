@@ -52,12 +52,13 @@ def image_request(mark):
     camera.resolution = (480, 320)
 
     s = r.text
+    print(s)
     ind = s.find('<b>')
     if ind == -1:
-        Label(master, text= "Мы не смогли распознать изображение", font=('Helvetica 20 bold')).pack(pady=20)
+        Label(master, text= "Мы не смогли распознать изображение").pack()
     else:
         ind2 = s.find('</b>')
-        Label(master, text= s[ind1+2:ind2], font=('Helvetica 20 bold')).pack(pady=20)
+        Label(master, text= s[ind1+2:ind2]).pack()
     master.after(3000,lambda:master.destroy())
     master.mainloop()
 
