@@ -62,7 +62,7 @@ def image_request(mark):
         cnv.create_text(50, 50, 
               text=s[ind+2:ind2],
               justify=CENTER, font="Verdana 14")
-    cnv.after(3000,lambda:cnv.destroy())
+    cnv.after(3000,lambda:master.destroy())
     cnv.mainloop()
 
 
