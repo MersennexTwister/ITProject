@@ -3,6 +3,12 @@ import os
 import RPi.GPIO as GPIO
 import time
 import picamera
+from tkinter import *
+
+master = Tk()
+W, H = 100, 100
+cnv = Canvas(master, width=W, height=H)
+cnv.pack()
 
 BUTTON_P = 8
 BUTTON_M = 10
@@ -45,7 +51,19 @@ def image_request(mark):
     os.remove(APP_ROOT +'/rpi_image_cache/' + 'cached.jpg')
     camera.resolution = (480, 320)
 
-    print(r.text)
+    s = r.text
+    ind = s.find('<b>')
+    if ind == -1:
+        cnv.create_text(50, 50, 
+              text="Мы не смогли распознать изображение",
+              justify=CENTER, font="Verdana 14")
+    else:
+        ind2 = s.find('</b>')
+        cnv.create_text(50, 50, 
+              text=s[ind+2:ind2],
+              justify=CENTER, font="Verdana 14")
+    cnv.after(3000,lambda:cnv.destroy())
+    cnv.mainloop()
 
 
 
