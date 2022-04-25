@@ -4,11 +4,11 @@ import RPi.GPIO as GPIO
 import time
 import picamera
 from tkinter import *
+from tkinter import ttk
 
 master = Tk()
 W, H = 100, 100
-cnv = Canvas(master, width=W, height=H)
-cnv.pack()
+master.geometry("100x100")
 
 BUTTON_P = 8
 BUTTON_M = 10
@@ -54,16 +54,12 @@ def image_request(mark):
     s = r.text
     ind = s.find('<b>')
     if ind == -1:
-        cnv.create_text(50, 50, 
-              text="Мы не смогли распознать изображение",
-              justify=CENTER, font="Verdana 14")
+        Label(win, text= "Мы не смогли распознать изображение", font=('Helvetica 20 bold')).pack(pady=20)
     else:
         ind2 = s.find('</b>')
-        cnv.create_text(50, 50, 
-              text=s[ind+2:ind2],
-              justify=CENTER, font="Verdana 14")
-    cnv.after(3000,lambda:master.destroy())
-    cnv.mainloop()
+        Label(win, text= s[ind1+2:ind2], font=('Helvetica 20 bold')).pack(pady=20)
+    master.after(3000,lambda:master.destroy())
+    master.mainloop()
 
 
 
