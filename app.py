@@ -381,13 +381,10 @@ def data_results(type):
         session['date-choose'] = date
         session['class-choose'] = cl
         return redirect('/lk/data_results/type=show')
-<<<<<<< HEAD
-    conn, cur = get_connection(APP_ROOT + 'data.db')
+    conn, cur = get_connection('data.db')
     res = cur.execute(f'SELECT data FROM mark INNER JOIN student ON student.id = mark.student_id WHERE teacher_id = {t_id}').fetchall() + cur.execute(f'SELECT data FROM minus INNER JOIN student ON student.id = minus.student_id WHERE teacher_id = {t_id}').fetchall()
-=======
     conn, cur = get_connection('data.db')
     res = cur.execute('SELECT data FROM mark').fetchall() + cur.execute('SELECT data FROM minus').fetchall()
->>>>>>> parent of af20837 (Сайт настроен под взаимодействие с хостингом)
     dataSet = set()
     for i in res:
         e = list(map(int, i[0].split('.')))
@@ -511,14 +508,11 @@ def delete_all():
     if t_id == None:
         return redirect('/error_no_access')
     if request.method == 'POST':
-<<<<<<< HEAD
-        conn, cur = get_connection(APP_ROOT + 'data.db')
+        conn, cur = get_connection('data.db')
         cur.execute(f'DELETE FROM mark WHERE student_id IN(SELECT student_id FROM mark INNER JOIN student ON student.id = mark.student_id WHERE teacher_id = {t_id})')
         cur.execute(f'DELETE FROM minus WHERE student_id IN(SELECT student_id FROM minus INNER JOIN student ON student.id = minus.student_id WHERE teacher_id = {t_id})')
-=======
         conn, cur = get_connection('data.db')
         cur.execute('DELETE FROM mark')
->>>>>>> parent of af20837 (Сайт настроен под взаимодействие с хостингом)
         conn.commit()
         return redirect('/lk/data_results/type=unknown')
     return render_template('delete_all.html')
