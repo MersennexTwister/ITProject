@@ -27,13 +27,13 @@ class FaceRec:
                 knownEncodings.append(encoding)
                 knownId.append(id)
         data = {"encodings": knownEncodings, "names": knownId}
-        clearFile("/var/www/mars-project.ru/face_enc")
-        f = open("/var/www/mars-project.ru/face_enc", "wb")
+        clearFile("face_enc")
+        f = open("face_enc", "wb")
         f.write(pickle.dumps(data))
         f.close()
 
     def recogniteTheFace(self, img):
-        data = pickle.loads(open('/var/www/mars-project.ru/face_enc', "rb").read())
+        data = pickle.loads(open('face_enc', "rb").read())
         rgb = img
         faces = face_recognition.face_locations(rgb)
         encodings = face_recognition.face_encodings(rgb)
