@@ -317,38 +317,39 @@ def logout():
 
 @app.route('/lk/undefined_students', methods=['POST', 'GET'])
 def undefined_students():
-    id = session.get('user_id')
+    id = session['user_id']
     if id is None:
         return redirect('/error_no_access')
 
-    pathList = list(paths.list_images(APP_ROOT + 'static/undefined_image_cache/'))
+    pathList = list(paths.list_images('static/undefined_image_cache'))
     nameList = []
     for p in pathList:
         fname = p.split(os.path.sep)[-1]
         nameList.append(('undefined_image_cache/' + fname, fname[:fname.find('.')], fname[:fname.find('.')] + 'mark'))
     error = False
     if request.method == 'POST':
-        for (p, cache_photo_id, idmark) in nameList:
-            q = request.form[cache_photo_id]
+        for (p, id, idmark) in nameList:
             markNotSelected = False
+            q = request.form[id]
             try:
                 s = request.form[idmark]
-                print('s:', s)
             except KeyError:
+                print("KeyError!!!")
                 markNotSelected = True
-            print('MarkNotSelected:', markNotSelected)
-            if q != 'Случайное фото':
+            print('s', s, 'q', q)
+            APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+            if q != 'Ошибка':
                 if markNotSelected:
                     error = True
                 else:
                     cur = get_connection_read()
                     ask = 'SELECT id FROM student WHERE name = "' + q + '"'
-                    student_id = cur.execute(ask).fetchone()[0]
-                    pathList = list(paths.list_images(APP_ROOT + 'faces/' + str(id)))
-                    interlayer.put_mark_direct(student_id, s == "+")
-                    os.replace(APP_ROOT + 'static/undefined_image_cache/' + cache_photo_id + '.png', APP_ROOT + 'faces/' + str(student_id) + '/' + str(len(pathList) + 1) + '.png')
+                    t_id = cur.execute(ask).fetchone()[0]
+                    pathList = list(paths.list_images('faces/' + str(t_id)))
+                    interlayer.put_mark_direct(t_id, s == "+")
+                    os.replace(APP_ROOT + '/static/undefined_image_cache/' + id + '.png', APP_ROOT + '/faces/' + str(t_id) + '/' + str(len(pathList) + 1) + '.png')
             else:
-                os.remove(APP_ROOT + 'static/undefined_image_cache/' + cache_photo_id + '.png')
+                os.remove(APP_ROOT + '/static/undefined_image_cache/' + id + '.png')
         return redirect('/lk')
 
     ask = "SELECT name FROM student WHERE teacher_id = " + str(id)
