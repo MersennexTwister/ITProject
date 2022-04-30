@@ -333,8 +333,10 @@ def undefined_students():
             markNotSelected = False
             try:
                 s = request.form[idmark]
+                print('s:', s)
             except KeyError:
                 markNotSelected = True
+            print('MarkNotSelected:', markNotSelected)
             if q != 'Ошибка':
                 if markNotSelected:
                     error = True
