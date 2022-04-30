@@ -317,6 +317,7 @@ def logout():
 
 @app.route('/lk/undefined_students', methods=['POST', 'GET'])
 def undefined_students():
+    global APP_ROOT
     id = session.get('user_id')
     if id is None:
         return redirect('/error_no_access')
