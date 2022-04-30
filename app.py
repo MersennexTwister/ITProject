@@ -320,26 +320,34 @@ def undefined_students():
     id = session.get('user_id')
     if id is None:
         return redirect('/error_no_access')
-
+    iscor = session.get('is-error-us')
+    if iscor is None or iscor == False:
+        g.error = False
+    else:
+        g.error = True
+        session['is-error-us'] = False
     pathList = list(paths.list_images(APP_ROOT + 'static/undefined_image_cache/'))
     nameList = []
     for p in pathList:
-        fname = p.split(os.path.sep)[-1]
-        nameList.append(('undefined_image_cache/' + fname, fname[:fname.find('.')], fname[:fname.find('.')] + 'mark'))
+        fname = p.split('/')[-1]
+        nameList.append(('undefined_image_cache/' + fname, fname[:fname.find('.')], fname[:fname.find('.')] + 'mark', fname[fname.find('.'):]))
 
     if request.method == 'POST':
-        for (p, id, idmark) in nameList:
+        for (p, id, idmark, ext) in nameList:
             q = request.form[id]
             s = request.form[idmark]
             if q != 'Ошибка':
+                if s == "":
+                    session['is-error-us'] = True
+                    return redirect('/lk/undefined_students')
                 cur = get_connection_read()
                 ask = 'SELECT id FROM student WHERE name = "' + q + '"'
-                id = cur.execute(ask).fetchone()[0]
+                idst = cur.execute(ask).fetchone()[0]
                 pathList = list(paths.list_images(APP_ROOT + 'faces/' + str(id)))
-                interlayer.put_mark_direct(id, s == "+")
-                os.replace(APP_ROOT + 'static/undefined_image_cache/' + id + '.png', APP_ROOT + 'faces/' + str(id) + '/' + str(len(pathList) + 1) + '.png')
+                interlayer.put_mark_direct(idst, s == "+")
+                os.replace(APP_ROOT + 'static/undefined_image_cache/' + id + ext, APP_ROOT + 'faces/' + str(idst) + '/' + str(len(pathList) + 1) + ext)
             else:
-                os.remove(APP_ROOT + 'static/undefined_image_cache/' + id + '.png')
+                os.remove(APP_ROOT + 'static/undefined_image_cache/' + id + ext)
         return redirect('/lk')
 
     ask = "SELECT name FROM student WHERE teacher_id = " + str(id)
