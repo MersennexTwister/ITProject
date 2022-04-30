@@ -317,15 +317,15 @@ def logout():
 
 @app.route('/lk/undefined_students', methods=['POST', 'GET'])
 def undefined_students():
-    id = session['user_id']
+    id = session.get('user_id')
     if id is None:
         return redirect('/error_no_access')
 
-    pathList = list(paths.list_images('static/undefined_image_cache'))
+    pathList = list(paths.list_images(APP_ROOT + 'static/undefined_image_cache'))
     nameList = []
     for p in pathList:
         fname = p.split(os.path.sep)[-1]
-        nameList.append(('undefined_image_cache/' + fname, fname[:fname.find('.')], fname[:fname.find('.')] + 'mark'))
+        nameList.append((APP_ROOT + 'undefined_image_cache/' + fname, fname[:fname.find('.')], fname[:fname.find('.')] + 'mark'))
     error = False
     if request.method == 'POST':
         for (p, id, idmark) in nameList:
