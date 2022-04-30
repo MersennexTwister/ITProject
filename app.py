@@ -329,7 +329,7 @@ def undefined_students():
     error = False
     if request.method == 'POST':
         for (p, cache_photo_id, idmark) in nameList:
-            q = request.form[student_id]
+            q = request.form[cache_photo_id]
             markNotSelected = False
             try:
                 s = request.form[idmark]
