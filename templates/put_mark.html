@@ -12,14 +12,16 @@
   <h1>Выставить оценку</h1>
   <br><br>
   <form method="post" enctype="multipart/form-data">
-    <input name="photo" id="photo" type="file" class="form-control" placeholder="Фото ученика"><br>
-    <select name="mark" class="form-select">
-    <option><a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser2" data-bs-toggle="dropdown" aria-expanded="false">
-        Оценка
-    </a></option>
-    <option><a class="dropdown-item">+</a></option>
-    <option><a class="dropdown-item">-</a></option>
-    </select>
+    <div class="input-group">
+      <input name="photo" id="photo" type="file" class="form-control" placeholder="Фото ученика"><br>
+      <select name="mark" class="form-select">
+      <option><a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser2" data-bs-toggle="dropdown" aria-expanded="false">
+          Оценка
+      </a></option>
+      <option><a class="dropdown-item">+</a></option>
+      <option><a class="dropdown-item">-</a></option>
+      </select>
+    </div>
     <button type="submit" class="btn btn-success">Выставить оценку</button>
   </form>
 </div>
