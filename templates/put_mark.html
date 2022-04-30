@@ -8,16 +8,18 @@
 
 
 {% block body %}
-<h1>Выставить оценку</h1>
-<form method="post" enctype="multipart/form-data">
-  <input name="photo" id="photo" type="file" class="form-control" placeholder="Фото ученика"><br>
-  <select name="mark">
-  <option><a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser2" data-bs-toggle="dropdown" aria-expanded="false">
-      Оценка
-  </a></option>
-  <option><a class="dropdown-item">+</a></option>
-  <option><a class="dropdown-item">-</a></option>
-  </select>
-  <button type="submit" class="btn btn-success">Добавить</button>
-</form>
+<div class="container px-4 py-5" id="featured-3">
+  <h1>Выставить оценку</h1>
+  <form method="post" enctype="multipart/form-data">
+    <input name="photo" id="photo" type="file" class="form-control" placeholder="Фото ученика"><br>
+    <select name="mark">
+    <option><a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser2" data-bs-toggle="dropdown" aria-expanded="false">
+        Оценка
+    </a></option>
+    <option><a class="dropdown-item">+</a></option>
+    <option><a class="dropdown-item">-</a></option>
+    </select>
+    <button type="submit" class="btn btn-success">Выставить оценку</button>
+  </form>
+</div>
 {% endblock %}
