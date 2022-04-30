@@ -328,7 +328,7 @@ def undefined_students():
         nameList.append(('undefined_image_cache/' + fname, fname[:fname.find('.')], fname[:fname.find('.')] + 'mark'))
     error = False
     if request.method == 'POST':
-        for (p, student_id, idmark) in nameList:
+        for (p, cache_photo_id, idmark) in nameList:
             q = request.form[student_id]
             markNotSelected = False
             try:
@@ -343,12 +343,12 @@ def undefined_students():
                 else:
                     cur = get_connection_read()
                     ask = 'SELECT id FROM student WHERE name = "' + q + '"'
-                    id = cur.execute(ask).fetchone()[0]
+                    student_id = cur.execute(ask).fetchone()[0]
                     pathList = list(paths.list_images(APP_ROOT + 'faces/' + str(id)))
                     interlayer.put_mark_direct(student_id, s == "+")
-                    os.replace(APP_ROOT + 'static/undefined_image_cache/' + student_id + '.png', APP_ROOT + 'faces/' + str(id) + '/' + str(len(pathList) + 1) + '.png')
+                    os.replace(APP_ROOT + 'static/undefined_image_cache/' + cache_photo_id + '.png', APP_ROOT + 'faces/' + str(student_id) + '/' + str(len(pathList) + 1) + '.png')
             else:
-                os.remove(APP_ROOT + 'static/undefined_image_cache/' + student_id + '.png')
+                os.remove(APP_ROOT + 'static/undefined_image_cache/' + cache_photo_id + '.png')
         return redirect('/lk')
 
     ask = "SELECT name FROM student WHERE teacher_id = " + str(id)
@@ -366,7 +366,6 @@ def data_results(type):
     id = session.get('user_id')
     if id == None:
         return redirect('/error_no_access')
-    error = None
     if request.method == 'POST':
         date = request.form['date-choose']
         name = request.form['name-choose']
@@ -403,9 +402,9 @@ def data_results(type):
         ask2 = f'SELECT cl, name FROM student WHERE teacher_id = {id} AND '
         if session['name-choose'] != 'Выберите ученика':
             name = session['name-choose']
-            id = cur.execute(f'SELECT id FROM student WHERE name = "{name}" AND teacher_id = {id}').fetchone()[0]
-            ask += f'student_id = {id} AND '
-            ask2 += f'id = {id} AND '
+            s_id = cur.execute(f'SELECT id FROM student WHERE name = "{name}" AND teacher_id = {id}').fetchone()[0]
+            ask += f'student_id = {s_id} AND '
+            ask2 += f'id = {s_id} AND '
         if session['date-choose'] != 'Выберите дату':
             date = session['date-choose']
             ask += f'data = "{date}" AND '
@@ -449,9 +448,9 @@ def data_results(type):
         ask2 = f'SELECT cl, name FROM student WHERE teacher_id = {id} AND '
         if session['name-choose'] != 'Выберите ученика':
             name = session['name-choose']
-            id = cur.execute(f'SELECT id FROM student WHERE name = "{name}" AND teacher_id = {id}').fetchone()[0]
-            ask += f'student_id = {id} AND '
-            ask2 += f'id = {id} AND '
+            s_id = cur.execute(f'SELECT id FROM student WHERE name = "{name}" AND teacher_id = {id}').fetchone()[0]
+            ask += f'student_id = {s_id} AND '
+            ask2 += f'id = {s_id} AND '
         if session['date-choose'] != 'Выберите дату':
             date = session['date-choose']
             ask += f'data = "{date}" AND '
