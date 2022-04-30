@@ -85,6 +85,7 @@ class Interlayer():
         db.session.commit()
 
     def recount(self):
+        self.faceRec = FaceRec(APP_ROOT)
         self.faceRec.countFaces()
 
     def put_mark_recognize(self, img, type):
