@@ -191,7 +191,7 @@ def login():
 
 @app.route('/lk', methods = ["POST", "GET"])
 def lk():
-    id = session['user_id']
+    id = session.get('user_id')
     if id is None:
         return redirect('/error_no_access')
     if request.method == 'POST':
@@ -208,7 +208,7 @@ def lk():
 
 @app.route('/lk/add_student', methods=["POST", "GET"])
 def add_student():
-    id = session['user_id']
+    id = session.get('user_id')
     if id is None:
         return redirect('/error_no_access')
     photo_list = []
@@ -255,7 +255,7 @@ def add_student():
 
 @app.route('/lk/delete_student/student_id=<int:st_id>', methods=["POST", "GET"])
 def delete_student(st_id):
-    id = session['user_id']
+    id = session.get('user_id')
     if id is None:
         return redirect('/error_no_access')
 
@@ -317,7 +317,7 @@ def logout():
 
 @app.route('/lk/undefined_students', methods=['POST', 'GET'])
 def undefined_students():
-    id = session['user_id']
+    id = session.get('user_id')
     if id is None:
         return redirect('/error_no_access')
 
@@ -334,10 +334,10 @@ def undefined_students():
             if q != 'Ошибка':
                 cur = get_connection_read()
                 ask = 'SELECT id FROM student WHERE name = "' + q + '"'
-                t_id = cur.execute(ask).fetchone()[0]
-                pathList = list(paths.list_images(APP_ROOT + 'faces/' + str(t_id)))
-                interlayer.put_mark_direct(t_id, s == "+")
-                os.replace(APP_ROOT + 'static/undefined_image_cache/' + id + '.png', APP_ROOT + 'faces/' + str(t_id) + '/' + str(len(pathList) + 1) + '.png')
+                id = cur.execute(ask).fetchone()[0]
+                pathList = list(paths.list_images(APP_ROOT + 'faces/' + str(id)))
+                interlayer.put_mark_direct(id, s == "+")
+                os.replace(APP_ROOT + 'static/undefined_image_cache/' + id + '.png', APP_ROOT + 'faces/' + str(id) + '/' + str(len(pathList) + 1) + '.png')
             else:
                 os.remove(APP_ROOT + 'static/undefined_image_cache/' + id + '.png')
         return redirect('/lk')
@@ -354,8 +354,8 @@ def undefined_students():
 
 @app.route('/lk/data_results/type=<string:type>', methods=['POST', 'GET'])
 def data_results(type):
-    t_id = session['user_id']
-    if t_id == None:
+    id = session.get('user_id')
+    if id == None:
         return redirect('/error_no_access')
     if request.method == 'POST':
         date = request.form['date-choose']
@@ -366,7 +366,7 @@ def data_results(type):
         session['class-choose'] = cl
         return redirect('/lk/data_results/type=show')
     cur = get_connection_read()
-    res = cur.execute(f'SELECT data FROM mark INNER JOIN student ON student.id = mark.student_id WHERE teacher_id = {t_id}').fetchall() + cur.execute(f'SELECT data FROM minus INNER JOIN student ON student.id = minus.student_id WHERE teacher_id = {t_id}').fetchall()
+    res = cur.execute(f'SELECT data FROM mark INNER JOIN student ON student.id = mark.student_id WHERE teacher_id = {id}').fetchall() + cur.execute(f'SELECT data FROM minus INNER JOIN student ON student.id = minus.student_id WHERE teacher_id = {id}').fetchall()
     dataSet = set()
     for i in res:
         e = list(map(int, i[0].split('.')))
@@ -374,10 +374,10 @@ def data_results(type):
     dataSet = sorted(list(dataSet))
     res = cur.execute(f"""SELECT student_id FROM mark
                       INNER JOIN student ON student.id = mark.student_id
-                      WHERE teacher_id = {t_id}""").fetchall() + \
+                      WHERE teacher_id = {id}""").fetchall() + \
           cur.execute(f"""SELECT student_id FROM minus
                       INNER JOIN student ON student.id = minus.student_id
-                      WHERE teacher_id = {t_id}""").fetchall()
+                      WHERE teacher_id = {id}""").fetchall()
 
     studentData = set()
     for i in res:
@@ -389,11 +389,11 @@ def data_results(type):
         cur = get_connection_read()
         ask = f"""SELECT student_id, data FROM mark
          INNER JOIN student ON student.id = mark.student_id
-         WHERE teacher_id = {t_id} AND """
-        ask2 = f'SELECT cl, name FROM student WHERE teacher_id = {t_id} AND '
+         WHERE teacher_id = {id} AND """
+        ask2 = f'SELECT cl, name FROM student WHERE teacher_id = {id} AND '
         if session['name-choose'] != 'Выберите ученика':
             name = session['name-choose']
-            id = cur.execute(f'SELECT id FROM student WHERE name = "{name}" AND teacher_id = {t_id}').fetchone()[0]
+            id = cur.execute(f'SELECT id FROM student WHERE name = "{name}" AND teacher_id = {id}').fetchone()[0]
             ask += f'student_id = {id} AND '
             ask2 += f'id = {id} AND '
         if session['date-choose'] != 'Выберите дату':
@@ -401,7 +401,7 @@ def data_results(type):
             ask += f'data = "{date}" AND '
         if session['class-choose'] != 'Выберите класс':
             cl = session['class-choose']
-            stList = cur.execute(f'SELECT id FROM student WHERE cl = {cl} AND teacher_id = {t_id}').fetchall()
+            stList = cur.execute(f'SELECT id FROM student WHERE cl = {cl} AND teacher_id = {id}').fetchall()
             if len(stList) != 0:
                 ask += '('
                 ask2 += '('
@@ -435,11 +435,11 @@ def data_results(type):
             d[i[1]][name] += 1
         ask = f"""SELECT student_id, data FROM minus
                  INNER JOIN student ON student.id = minus.student_id
-                 WHERE teacher_id = {t_id} AND """
-        ask2 = f'SELECT cl, name FROM student WHERE teacher_id = {t_id} AND '
+                 WHERE teacher_id = {id} AND """
+        ask2 = f'SELECT cl, name FROM student WHERE teacher_id = {id} AND '
         if session['name-choose'] != 'Выберите ученика':
             name = session['name-choose']
-            id = cur.execute(f'SELECT id FROM student WHERE name = "{name}" AND teacher_id = {t_id}').fetchone()[0]
+            id = cur.execute(f'SELECT id FROM student WHERE name = "{name}" AND teacher_id = {id}').fetchone()[0]
             ask += f'student_id = {id} AND '
             ask2 += f'id = {id} AND '
         if session['date-choose'] != 'Выберите дату':
@@ -447,7 +447,7 @@ def data_results(type):
             ask += f'data = "{date}" AND '
         if session['class-choose'] != 'Выберите класс':
             cl = session['class-choose']
-            stList = cur.execute(f'SELECT id FROM student WHERE cl = {cl} AND teacher_id = {t_id}').fetchall()
+            stList = cur.execute(f'SELECT id FROM student WHERE cl = {cl} AND teacher_id = {id}').fetchall()
             if len(stList) != 0:
                 ask += '('
                 ask2 += '('
@@ -486,30 +486,30 @@ def data_results(type):
 
 @app.route('/lk/delete_all', methods=['POST', 'GET'])
 def delete_all():
-    t_id = session['user_id']
-    if t_id == None:
+    id = session.get('user_id')
+    if id == None:
         return redirect('/error_no_access')
     if request.method == 'POST':
         conn, cur = get_connection_read_write()
-        cur.execute(f'DELETE FROM mark WHERE student_id IN(SELECT student_id FROM mark INNER JOIN student ON student.id = mark.student_id WHERE teacher_id = {t_id})')
-        cur.execute(f'DELETE FROM minus WHERE student_id IN(SELECT student_id FROM minus INNER JOIN student ON student.id = minus.student_id WHERE teacher_id = {t_id})')
+        cur.execute(f'DELETE FROM mark WHERE student_id IN(SELECT student_id FROM mark INNER JOIN student ON student.id = mark.student_id WHERE teacher_id = {id})')
+        cur.execute(f'DELETE FROM minus WHERE student_id IN(SELECT student_id FROM minus INNER JOIN student ON student.id = minus.student_id WHERE teacher_id = {id})')
         conn.commit()
         return redirect('/lk/data_results/type=unknown')
     return render_template('delete_all.html')
 
 @app.route('/lk/edit_student/student_id=<int:st_id>', methods=['POST', 'GET'])
 def edit_student(st_id):
-    t_id = session['user_id']
-    if t_id == None:
+    id = session.get('user_id')
+    if id == None:
         return redirect('/error_no_access')
     conn, cur = get_connection_read_write()
     if request.method == 'POST':
-        cur.execute(f'UPDATE student SET name = "{request.form["surname"] + " " + request.form["name"] + " " + request.form["patronymic"]}" WHERE teacher_id = {t_id} AND id = {st_id}')
-        cur.execute(f'UPDATE student SET cl = {int(request.form["cl"].split()[0])} WHERE teacher_id = {t_id} AND id = {st_id}')
+        cur.execute(f'UPDATE student SET name = "{request.form["surname"] + " " + request.form["name"] + " " + request.form["patronymic"]}" WHERE teacher_id = {id} AND id = {st_id}')
+        cur.execute(f'UPDATE student SET cl = {int(request.form["cl"].split()[0])} WHERE teacher_id = {id} AND id = {st_id}')
         conn.commit()
         return redirect('/lk')
-    name = cur.execute(f'SELECT name FROM student WHERE teacher_id = {t_id} AND id = {st_id}').fetchone()[0]
-    cl = cur.execute(f'SELECT cl FROM student WHERE teacher_id = {t_id} AND id = {st_id}').fetchone()[0]
+    name = cur.execute(f'SELECT name FROM student WHERE teacher_id = {id} AND id = {st_id}').fetchone()[0]
+    cl = cur.execute(f'SELECT cl FROM student WHERE teacher_id = {id} AND id = {st_id}').fetchone()[0]
     nameList = name.split()
     return render_template('enter_student.html', st_name=name, st_class=f"{cl} класс", nameList=nameList)
 
