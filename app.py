@@ -337,7 +337,7 @@ def undefined_students():
             except KeyError:
                 markNotSelected = True
             print('MarkNotSelected:', markNotSelected)
-            if q != 'Ошибка':
+            if q != 'Случайное фото':
                 if markNotSelected:
                     error = True
                 else:
