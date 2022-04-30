@@ -14,7 +14,7 @@ class FaceRec:
     def __init__(self, app_root):
         self.APP_ROOT = app_root
 
-    def startWork(self):
+    def countFaces(self):
         imagePaths = list(paths.list_images(self.APP_ROOT + 'faces'))
         knownEncodings = []
         knownId = []

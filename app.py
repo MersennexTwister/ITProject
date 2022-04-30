@@ -72,8 +72,7 @@ class Interlayer():
     tz = pytz.timezone('Europe/Moscow')
 
     def __init__(self):
-        self.fr = FaceRec(APP_ROOT)
-        self.fr.startWork()
+        self.faceRec = FaceRec(APP_ROOT)
 
     def put_mark(self, mark_data):
         cur = get_connection_read()
@@ -86,11 +85,10 @@ class Interlayer():
         db.session.commit()
 
     def recount(self):
-        self.fr = FaceRec(APP_ROOT + 'faces/')
-        self.fr.startWork()
+        self.faceRec.countFaces()
 
     def put_mark_recognize(self, img, type):
-        face_id = self.fr.recogniteTheFace(img)
+        face_id = self.faceRec.recogniteTheFace(img)
 
         if face_id != -1:
             dt = datetime.datetime.now(self.tz)
@@ -105,10 +103,7 @@ class Interlayer():
 interlayer = Interlayer()
 
 def update():
-    global fr
-    if session['is_changed']:
-        interlayer.recount()
-        session['is_changed'] = False
+    interlayer.recount()
 
 @app.before_request
 def load_logged_in_user():
@@ -161,7 +156,6 @@ def register():
                 db.session.add(t)
                 db.session.commit()
                 session['user_id'] = id
-                session['is_changed'] = None
                 return redirect('/user=' + str(id) + '/lk')
             except exc.IntegrityError:
                 error = f'Пользватель с логином "{login}" уже зарегестрирован!'
@@ -189,7 +183,6 @@ def login():
         if error == None:
             session['user_id'] = teacher[0]
             session['add_student_photo_num'] = 3
-            session['is_changed'] = None
             return redirect('/lk')
 
     return render_template("login.html", error = error)
@@ -246,7 +239,6 @@ def add_student():
 
             db.session.add(t)
             db.session.commit()
-            session['is_changed'] = True
             return redirect('/lk')
 
         elif 'increase_photo_num' in request.form:
@@ -272,7 +264,6 @@ def delete_student(st_id):
         cur.execute(ask)
         conn.commit()
         shutil.rmtree(APP_ROOT + 'faces/' + str(st_id))
-        session['is_changed'] = True
         return redirect('/lk')
     cur = get_connection_read()
     ask = "SELECT name FROM student WHERE id = " + str(st_id)
