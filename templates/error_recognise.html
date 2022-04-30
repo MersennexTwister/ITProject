@@ -3,9 +3,9 @@
 {% block title %}Произошла ошибка!{% endblock %}
 
 {% block body %}
-<body class="text-center">
-    <h1>К сожалению, произошла ошибка.</h1>
+<div class="container px-4 py-5">
+    <h3 class="pb-3">К сожалению, произошла ошибка.</h3>
     <p>Cистема не смогла распознать ученика в камере.</p>
-    <a class="redirect" href="/lk">Вернуться в личный кабинет</a>
+    <a href="/lk" class="redirect"><button type="button" class="btn btn-outline-danger me-2">Вернуться в личный кабинет</button></a>
 </body>
 {% endblock %}
