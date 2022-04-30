@@ -14,30 +14,23 @@ import pytz
 import datetime
 import sqlite3
 
-
-def get_connection(db_name):
-    conn = sqlite3.connect(db_name)
-    cur = conn.cursor()
-    return conn, cur
-
 app = Flask(__name__)
 app.secret_key = '28bee993c5553ec59b3c051d535760198f6f018ed1cca1ddadcdb570352ef05b'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-def set_path(id):
-    APP_ROOT = os.path.dirname(os.path.abspath(__file__))
-    UPLOAD_FOLD = 'faces/' + str(id)
 
-    if not os.path.isdir(UPLOAD_FOLD):
-        os.chdir('faces')
-        os.mkdir(str(id))
-        os.chdir('..')
+def get_connection_read():
+    return sqlite3.connect(APP_ROOT + 'data.db').cursor()
 
-    UPLOAD_FOLDER = os.path.join(APP_ROOT, UPLOAD_FOLD)
-    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+def get_connection_read_write():
+    conn = sqlite3.connect(APP_ROOT + 'data.db')
+    cur = conn.cursor()
+    return conn, cur
 
+
+APP_ROOT = '/var/www/mars-project.ru/'
 
 class Teacher(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -79,11 +72,11 @@ class Interlayer():
     tz = pytz.timezone('Europe/Moscow')
 
     def __init__(self):
-        self.fr = FaceRec('faces')
+        self.fr = FaceRec(APP_ROOT)
         self.fr.startWork()
 
     def put_mark(self, mark_data):
-        conn, cur = get_connection('data.db')
+        cur = get_connection_read()
         new_id = cur.execute('SELECT COUNT(id) FROM mark').fetchone()[0] + cur.execute('SELECT COUNT(id) FROM minus').fetchone()[0]
         if mark_data[2]:
             m = Mark(id=new_id, student_id=mark_data[1], data=mark_data[0])
@@ -93,7 +86,7 @@ class Interlayer():
         db.session.commit()
 
     def recount(self):
-        self.fr = FaceRec('faces')
+        self.fr = FaceRec(APP_ROOT + 'faces/')
         self.fr.startWork()
 
     def put_mark_recognize(self, img, type):
@@ -124,7 +117,7 @@ def load_logged_in_user():
     if id is None:
         g.teacher_name = None
     else:
-        conn, cur = get_connection('data.db')
+        cur = get_connection_read()
         teacher = cur.execute('SELECT * FROM teacher WHERE id = ?', (id,)).fetchone()
         g.teacher_name = teacher[1]
 
@@ -181,7 +174,7 @@ def register():
 def login():
     error = None
     if request.method == "POST":
-        conn, cur = get_connection('data.db')
+        cur = get_connection_read()
 
         login = request.form['login']
         password = request.form['password']
@@ -210,11 +203,10 @@ def lk():
     if request.method == 'POST':
         update()
         return redirect('/lk')
-    conn, cur = get_connection('data.db')
+    cur = get_connection_read()
     ask = 'SELECT cl, name, id FROM student WHERE teacher_id = ' + str(id)
     res = sorted(cur.execute(ask).fetchall())
     st = []
-    print(res)
     for i in res:
         st.append([i[1], i[0], 'lk/delete_student/student_id=' + str(i[2]), 'lk/edit_student/student_id=' + str(i[2])])
     return render_template('lk.html', students=st)
@@ -235,18 +227,20 @@ def add_student():
         if 'add_student' in request.form:
             name = request.form['surname'] + ' ' + request.form['name'] + ' ' + request.form['patronymic']
             cl = request.form['class']
-            conn, cur = get_connection('data.db')
+            cur = get_connection_read()
             ask = "SELECT COUNT(id) FROM student WHERE name = '" + name + "' AND teacher_id = " + str(id)
             inf = cur.execute(ask).fetchone()[0]
             if inf > 0:
                 return 'Ученик уже есть у вас в классе!'
             ask = "SELECT MAX(id) FROM student"
             inf = cur.execute(ask).fetchone()[0] + 1
-            set_path(inf)
+
+            UPLOAD_FOLD = 'faces/' + str(inf)
+            os.mkdir(APP_ROOT + 'faces/' + str(inf))
 
             for photo in request.files:
                 request.files[photo].save(
-                    os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(request.files[photo].filename)))
+                    os.path.join(APP_ROOT + 'faces/' + str(inf), secure_filename(request.files[photo].filename)))
 
             t = Student(id=inf, name=name, cl=cl, teacher_id=id)
 
@@ -273,14 +267,14 @@ def delete_student(st_id):
         return redirect('/error_no_access')
 
     if request.method == "POST":
-        conn, cur = get_connection('data.db')
+        conn, cur = get_connection_read_write()
         ask = 'DELETE FROM student WHERE id = ' + str(st_id)
         cur.execute(ask)
         conn.commit()
-        shutil.rmtree('faces/' + str(st_id))
+        shutil.rmtree(APP_ROOT + 'faces/' + str(st_id))
         session['is_changed'] = True
         return redirect('/lk')
-    conn, cur = get_connection('data.db')
+    cur = get_connection_read()
     ask = "SELECT name FROM student WHERE id = " + str(st_id)
     name = cur.execute(ask).fetchone()[0]
     return render_template('delete_student.html', name=name)
@@ -289,7 +283,7 @@ def delete_student(st_id):
 @app.route('/lk/success_page/student_id=<int:st_id>')
 def success_page(st_id):
     ask = "SELECT name FROM student WHERE id = " + str(st_id)
-    conn, cur = get_connection('data.db')
+    cur = get_connection_read()
     name = cur.execute(ask).fetchone()[0]
     return render_template('success_page.html', name=name)
 
@@ -305,22 +299,21 @@ def put_mark():
         f = request.files['photo']
         s = request.form['mark']
 
-        APP_ROOT = os.path.dirname(os.path.abspath(__file__))
         UPLOAD_FOLD = 'site_image_cache'
         UPLOAD_FOLDER = os.path.join(APP_ROOT, UPLOAD_FOLD)
         app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-        f.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(f.filename)))
-        img = cv2.imread("site_image_cache/" + f.filename, cv2.IMREAD_COLOR)
+        f.save(APP_ROOT + 'site_image_cache/1.png')
+        img = cv2.imread(APP_ROOT + "site_image_cache/1.png", cv2.IMREAD_COLOR)
         face = interlayer.put_mark_recognize(img, s == "+")
 
         if face == -1:
-            pathList = list(paths.list_images('static'))
+            pathList = list(paths.list_images(APP_ROOT + 'static'))
             cnt = len(pathList) + 1
-            os.replace(APP_ROOT + '/site_image_cache/' + f.filename, APP_ROOT + '/static/undefined_image_cache/' + str(cnt) + '.png')
+            os.replace(APP_ROOT + 'site_image_cache/1.png', APP_ROOT + 'static/undefined_image_cache/' + str(cnt) + '.png')
             return redirect('/lk/error_recognise')
         else:
-            os.remove('site_image_cache/' + f.filename)
+            os.remove(APP_ROOT + 'site_image_cache/1.png')
         return redirect('/lk/success_page/student_id=' + str(face))
     return render_template('put_mark.html')
 
@@ -336,7 +329,7 @@ def undefined_students():
     if id is None:
         return redirect('/error_no_access')
 
-    pathList = list(paths.list_images('static/undefined_image_cache'))
+    pathList = list(paths.list_images(APP_ROOT + 'static/undefined_image_cache/'))
     nameList = []
     for p in pathList:
         fname = p.split(os.path.sep)[-1]
@@ -346,20 +339,19 @@ def undefined_students():
         for (p, id, idmark) in nameList:
             q = request.form[id]
             s = request.form[idmark]
-            APP_ROOT = os.path.dirname(os.path.abspath(__file__))
             if q != 'Ошибка':
-                conn, cur = get_connection('data.db')
+                cur = get_connection_read()
                 ask = 'SELECT id FROM student WHERE name = "' + q + '"'
                 t_id = cur.execute(ask).fetchone()[0]
-                pathList = list(paths.list_images('faces/' + str(t_id)))
+                pathList = list(paths.list_images(APP_ROOT + 'faces/' + str(t_id)))
                 interlayer.put_mark_direct(t_id, s == "+")
-                os.replace(APP_ROOT + '/static/undefined_image_cache/' + id + '.png', APP_ROOT + '/faces/' + str(t_id) + '/' + str(len(pathList) + 1) + '.png')
+                os.replace(APP_ROOT + 'static/undefined_image_cache/' + id + '.png', APP_ROOT + 'faces/' + str(t_id) + '/' + str(len(pathList) + 1) + '.png')
             else:
-                os.remove(APP_ROOT + '/static/undefined_image_cache/' + id + '.png')
+                os.remove(APP_ROOT + 'static/undefined_image_cache/' + id + '.png')
         return redirect('/lk')
 
     ask = "SELECT name FROM student WHERE teacher_id = " + str(id)
-    conn, cur = get_connection('data.db')
+    cur = get_connection_read()
     nl = cur.execute(ask).fetchall()
     stList = []
     for name in nl:
@@ -381,10 +373,8 @@ def data_results(type):
         session['date-choose'] = date
         session['class-choose'] = cl
         return redirect('/lk/data_results/type=show')
-    conn, cur = get_connection('data.db')
+    cur = get_connection_read()
     res = cur.execute(f'SELECT data FROM mark INNER JOIN student ON student.id = mark.student_id WHERE teacher_id = {t_id}').fetchall() + cur.execute(f'SELECT data FROM minus INNER JOIN student ON student.id = minus.student_id WHERE teacher_id = {t_id}').fetchall()
-    conn, cur = get_connection('data.db')
-    res = cur.execute('SELECT data FROM mark').fetchall() + cur.execute('SELECT data FROM minus').fetchall()
     dataSet = set()
     for i in res:
         e = list(map(int, i[0].split('.')))
@@ -404,7 +394,7 @@ def data_results(type):
         studentData.add(name)
     studentData = sorted(list(studentData))
     if type != 'unknown':
-        conn, cur = get_connection('data.db')
+        cur = get_connection_read()
         ask = f"""SELECT student_id, data FROM mark
          INNER JOIN student ON student.id = mark.student_id
          WHERE teacher_id = {t_id} AND """
@@ -508,11 +498,9 @@ def delete_all():
     if t_id == None:
         return redirect('/error_no_access')
     if request.method == 'POST':
-        conn, cur = get_connection('data.db')
+        conn, cur = get_connection_read_write()
         cur.execute(f'DELETE FROM mark WHERE student_id IN(SELECT student_id FROM mark INNER JOIN student ON student.id = mark.student_id WHERE teacher_id = {t_id})')
         cur.execute(f'DELETE FROM minus WHERE student_id IN(SELECT student_id FROM minus INNER JOIN student ON student.id = minus.student_id WHERE teacher_id = {t_id})')
-        conn, cur = get_connection('data.db')
-        cur.execute('DELETE FROM mark')
         conn.commit()
         return redirect('/lk/data_results/type=unknown')
     return render_template('delete_all.html')
@@ -522,7 +510,7 @@ def edit_student(st_id):
     t_id = session['user_id']
     if t_id == None:
         return redirect('/error_no_access')
-    conn, cur = get_connection('data.db')
+    conn, cur = get_connection_read_write()
     if request.method == 'POST':
         cur.execute(f'UPDATE student SET name = "{request.form["surname"] + " " + request.form["name"] + " " + request.form["patronymic"]}" WHERE teacher_id = {t_id} AND id = {st_id}')
         cur.execute(f'UPDATE student SET cl = {int(request.form["cl"].split()[0])} WHERE teacher_id = {t_id} AND id = {st_id}')

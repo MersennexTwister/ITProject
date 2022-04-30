@@ -11,11 +11,11 @@ def clearFile(fileName):
 
 class FaceRec:
 
-    def __init__(self, path):
-        self.workPath = path
+    def __init__(self, app_root):
+        self.APP_ROOT = app_root
 
     def startWork(self):
-        imagePaths = list(paths.list_images(self.workPath))
+        imagePaths = list(paths.list_images(self.APP_ROOT + 'faces'))
         knownEncodings = []
         knownId = []
         for (i, imagePath) in enumerate(imagePaths):
@@ -27,13 +27,13 @@ class FaceRec:
                 knownEncodings.append(encoding)
                 knownId.append(id)
         data = {"encodings": knownEncodings, "names": knownId}
-        clearFile("face_enc")
-        f = open("face_enc", "wb")
+        clearFile(self.APP_ROOT + 'face_enc')
+        f = open(self.APP_ROOT + 'face_enc', "wb")
         f.write(pickle.dumps(data))
         f.close()
 
     def recogniteTheFace(self, img):
-        data = pickle.loads(open('face_enc', "rb").read())
+        data = pickle.loads(open(self.APP_ROOT + 'face_enc', "rb").read())
         rgb = img
         faces = face_recognition.face_locations(rgb)
         encodings = face_recognition.face_encodings(rgb)
