@@ -326,18 +326,25 @@ def undefined_students():
     for p in pathList:
         fname = p.split(os.path.sep)[-1]
         nameList.append(('undefined_image_cache/' + fname, fname[:fname.find('.')], fname[:fname.find('.')] + 'mark'))
-
+    error = False
     if request.method == 'POST':
         for (p, id, idmark) in nameList:
             q = request.form[id]
-            s = request.form[idmark]
+            markNotSelected = False
+            try:
+                s = request.form[idmark]
+            except KeyError:
+                markNotSelected = True
             if q != 'Ошибка':
-                cur = get_connection_read()
-                ask = 'SELECT id FROM student WHERE name = "' + q + '"'
-                id = cur.execute(ask).fetchone()[0]
-                pathList = list(paths.list_images(APP_ROOT + 'faces/' + str(id)))
-                interlayer.put_mark_direct(id, s == "+")
-                os.replace(APP_ROOT + 'static/undefined_image_cache/' + id + '.png', APP_ROOT + 'faces/' + str(id) + '/' + str(len(pathList) + 1) + '.png')
+                if markNotSelected:
+                    error = True
+                else:
+                    cur = get_connection_read()
+                    ask = 'SELECT id FROM student WHERE name = "' + q + '"'
+                    id = cur.execute(ask).fetchone()[0]
+                    pathList = list(paths.list_images(APP_ROOT + 'faces/' + str(id)))
+                    interlayer.put_mark_direct(id, s == "+")
+                    os.replace(APP_ROOT + 'static/undefined_image_cache/' + id + '.png', APP_ROOT + 'faces/' + str(id) + '/' + str(len(pathList) + 1) + '.png')
             else:
                 os.remove(APP_ROOT + 'static/undefined_image_cache/' + id + '.png')
         return redirect('/lk')
@@ -349,7 +356,7 @@ def undefined_students():
     for name in nl:
         stList.append(name[0])
 
-    return render_template('undefined_students.html', fList=nameList, nameList=stList)
+    return render_template('undefined_students.html', fList=nameList, nameList=stList, error=error)
 
 
 @app.route('/lk/data_results/type=<string:type>', methods=['POST', 'GET'])
@@ -357,6 +364,7 @@ def data_results(type):
     id = session.get('user_id')
     if id == None:
         return redirect('/error_no_access')
+    error = None
     if request.method == 'POST':
         date = request.form['date-choose']
         name = request.form['name-choose']
