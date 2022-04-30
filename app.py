@@ -328,8 +328,8 @@ def undefined_students():
         nameList.append(('undefined_image_cache/' + fname, fname[:fname.find('.')], fname[:fname.find('.')] + 'mark'))
     error = False
     if request.method == 'POST':
-        for (p, id, idmark) in nameList:
-            q = request.form[id]
+        for (p, student_id, idmark) in nameList:
+            q = request.form[student_id]
             markNotSelected = False
             try:
                 s = request.form[idmark]
@@ -345,10 +345,10 @@ def undefined_students():
                     ask = 'SELECT id FROM student WHERE name = "' + q + '"'
                     id = cur.execute(ask).fetchone()[0]
                     pathList = list(paths.list_images(APP_ROOT + 'faces/' + str(id)))
-                    interlayer.put_mark_direct(id, s == "+")
-                    os.replace(APP_ROOT + 'static/undefined_image_cache/' + id + '.png', APP_ROOT + 'faces/' + str(id) + '/' + str(len(pathList) + 1) + '.png')
+                    interlayer.put_mark_direct(student_id, s == "+")
+                    os.replace(APP_ROOT + 'static/undefined_image_cache/' + student_id + '.png', APP_ROOT + 'faces/' + str(id) + '/' + str(len(pathList) + 1) + '.png')
             else:
-                os.remove(APP_ROOT + 'static/undefined_image_cache/' + id + '.png')
+                os.remove(APP_ROOT + 'static/undefined_image_cache/' + student_id + '.png')
         return redirect('/lk')
 
     ask = "SELECT name FROM student WHERE teacher_id = " + str(id)
