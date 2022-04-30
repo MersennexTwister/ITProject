@@ -194,8 +194,27 @@ def lk():
     id = session.get('user_id')
     if id is None:
         return redirect('/error_no_access')
+    upd = session.get('is-success-upd')
+    if upd is None or upd == False:
+        g.update = False
+    else:
+        g.update = True
+    session['is-success-upd'] = False
+    toadd = session.get('is-success-add')
+    if toadd is None or toadd == "-1":
+        g.toadd = "-1"
+    else:
+        g.toadd = session['is-success-add']
+    session['is-success-add'] = "-1"
+    todel = session.get('is-success-delete')
+    if todel is None or todel == "-1":
+        g.todel = "-1"
+    else:
+        g.todel = session['is-success-delete']
+    session['is-success-delete'] = "-1"
     if request.method == 'POST':
         update()
+        session['is-success-upd'] = True
         return redirect('/lk')
     cur = get_connection_read()
     ask = 'SELECT cl, name, id FROM student WHERE teacher_id = ' + str(id)
@@ -240,6 +259,7 @@ def add_student():
 
             db.session.add(t)
             db.session.commit()
+            session['is-success-add'] = name
             return redirect('/lk')
 
         elif 'increase_photo_num' in request.form:
@@ -258,17 +278,17 @@ def delete_student(st_id):
     id = session.get('user_id')
     if id is None:
         return redirect('/error_no_access')
-
+    cur = get_connection_read()
+    ask = "SELECT name FROM student WHERE id = " + str(st_id)
+    name = cur.execute(ask).fetchone()[0]
     if request.method == "POST":
         conn, cur = get_connection_read_write()
         ask = 'DELETE FROM student WHERE id = ' + str(st_id)
         cur.execute(ask)
         conn.commit()
         shutil.rmtree(APP_ROOT + 'faces/' + str(st_id))
+        session['is-success-delete'] = name
         return redirect('/lk')
-    cur = get_connection_read()
-    ask = "SELECT name FROM student WHERE id = " + str(st_id)
-    name = cur.execute(ask).fetchone()[0]
     return render_template('delete_student.html', name=name)
 
 
