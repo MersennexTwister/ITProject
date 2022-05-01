@@ -9,6 +9,7 @@
 {% block body %}
 <div class="container px-4 py-5">
     <h2 class="pb-2 border-bottom">Редактировать профиль: {{ st_name }}</h2><br>
+    <a href={{ link }}><button class="btn btn-outline-primary" type="button" style="margin-bottom: 20px;">Изменить фотографии</button></a>
     <form method="post" enctype = "multipart/form-data">
         <div class="input-group has-validation" style="width: 400px">
             <span class="input-group-text" style="width: 100px">Фамилия</span>

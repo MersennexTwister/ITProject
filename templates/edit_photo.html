@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block style %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/undefined_students.css') }}">
+{% endblock %}
+
+{% block title %}
+
+Редактировать фотографии
+{% endblock %}
+
+
+{% block body %}
+<body>
+    <div class="container px-4 py-5" id="featured-3">
+        <form method="post" enctype = "multipart/form-data">
+            <h2 class="pb-2 border-bottom">{{ name }}. Изменить фотографии.</h2>
+            <br>
+            <button type="submit" class="btn btn-danger">Удалить выбранные фото</button><br><br>
+            <a href={{ link }}><button type="button" class="btn btn-primary">Добавить фотографии</button></a>
+            <br><br>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col">Фотография</th>
+                    <th scope="col">Выбрать</th>
+                </tr>
+                </thead>
+                <tbody>
+                    {% for el in fList %}
+                    <tr>
+                        <th scope="row">
+                            <img src="{{ url_for('static', filename=el) }}" height="400px"/>
+                        </th>
+                        <td>
+                            <input type="checkbox" class="form-check-input" id={{ el }} name = {{ el }}>
+                            <label class="form-check-label" for={{ el }}>Удалить</label>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </form>
+        <a href="/lk"><button class="btn btn-outline-danger">Вернуться в личный кабинет</button></a>
+    </div>
+</body>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}Добавление ученика{% endblock %}
+
+
+{% block body %}
+<body>
+  <div class="container px-4 py-5">
+    <h2 class="pb-2 border-bottom">{{ name }}. Добавить фотографии</h2>
+    <form method="post" enctype = "multipart/form-data">
+      <br>
+      {% for i in photo_list %}
+          <input name={{ i }} id={{ i }} type="file" class="form-control">
+          <br>
+      {% endfor %}
+      <div class="btn-group">
+        <button type="submit" class="btn btn-outline-success" name="increase_photo_num">+</button>
+        <button type="submit" class="btn btn-outline-danger" name="decrease_photo_num">-</button>
+      </div>
+      <button type="submit" class="btn btn-danger" name="add_photo">Добавить</button>
+    </form>
+  </div>
+</body>
+{% endblock %}
