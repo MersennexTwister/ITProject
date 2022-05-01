@@ -1,5 +1,4 @@
 *.pyc
-faces
 data.db
 face_enc
 static/undefined_image_cache
