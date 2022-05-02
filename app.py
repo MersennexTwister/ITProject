@@ -256,8 +256,8 @@ def add_student():
             UPLOAD_FOLD = 'static/faces/' + str(inf)
             os.mkdir(APP_ROOT + 'static/faces/' + str(inf))
 
-            if request.files[photo].filename != " " or request.files[photo].filename != "":
-                for photo in request.files:
+            for photo in request.files:
+                if request.files[photo].filename != " " or request.files[photo].filename != "":
                     request.files[photo].save(
                         os.path.join(APP_ROOT + 'static/faces/' + str(inf), secure_filename(request.files[photo].filename)))
 
@@ -567,8 +567,8 @@ def add_photo(st_id):
     form_photo_list()
     if request.method == "POST":
         if 'add_photo' in request.form:
-            if request.files[photo].filename != " " or request.files[photo].filename != "":
-                for photo in request.files:
+            for photo in request.files:
+                if request.files[photo].filename != " " or request.files[photo].filename != "":
                     request.files[photo].save(
                         os.path.join(APP_ROOT + 'static/faces/' + str(st_id), secure_filename(request.files[photo].filename)))
 
