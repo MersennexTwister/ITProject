@@ -256,9 +256,10 @@ def add_student():
             UPLOAD_FOLD = 'static/faces/' + str(inf)
             os.mkdir(APP_ROOT + 'static/faces/' + str(inf))
 
-            for photo in request.files:
-                request.files[photo].save(
-                    os.path.join(APP_ROOT + 'static/faces/' + str(inf), secure_filename(request.files[photo].filename)))
+            if request.files[photo].filename != " " or request.files[photo].filename != "":
+                for photo in request.files:
+                    request.files[photo].save(
+                        os.path.join(APP_ROOT + 'static/faces/' + str(inf), secure_filename(request.files[photo].filename)))
 
             t = Student(id=inf, name=name, cl=cl, teacher_id=id)
 
@@ -566,9 +567,10 @@ def add_photo(st_id):
     form_photo_list()
     if request.method == "POST":
         if 'add_photo' in request.form:
-            for photo in request.files:
-                request.files[photo].save(
-                    os.path.join(APP_ROOT + 'static/faces/' + str(st_id), secure_filename(request.files[photo].filename)))
+            if request.files[photo].filename != " " or request.files[photo].filename != "":
+                for photo in request.files:
+                    request.files[photo].save(
+                        os.path.join(APP_ROOT + 'static/faces/' + str(st_id), secure_filename(request.files[photo].filename)))
 
             return redirect(f'/lk/edit_student_photo/student_id={st_id}')
 
