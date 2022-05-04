@@ -45,6 +45,7 @@ def setup():
 def send_image(mark, path=APP_ROOT + '/rpi_image_cache/cached.jpg'):
     print("send image enter")
     r = rqs.post(URL + 'login', data={'login': LOGIN, 'password': PASSWORD})
+    print(r.text)
     img = open(path, 'rb')
     print("send image 1")
 
@@ -52,6 +53,7 @@ def send_image(mark, path=APP_ROOT + '/rpi_image_cache/cached.jpg'):
     files = {'photo': img}
 
     r = rqs.post(URL + 'lk/put_mark', files=files, data={'mark': mark})
+    print(r.text)
     print("send image 2")
 
     img.close()
