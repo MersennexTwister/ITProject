@@ -5,6 +5,14 @@ import time
 import picamera
 from tkinter import *
 from tkinter import ttk
+import urllib.request
+
+def check_connect(host='http://google.com'):
+    try:
+        urllib.request.urlopen(host)
+        return True
+    except:
+        return False
 
 master = Tk()
 W, H = 100, 100
@@ -18,7 +26,7 @@ DELAY_SEC = 0.05
 prev_p, cur_p = False, False
 prev_m, cur_m = False, False
 
-URL = 'https://mars-project.ru/'
+URL = 'http://mars-project.ru/'
 LOGIN = 'testlogin44'
 PASSWORD = 'testpassword44'
 APP_ROOT = '/home/pi/project-mars'
@@ -34,33 +42,46 @@ def setup():
     GPIO.setup(BUTTON_M, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
     GPIO.setup(BUTTON_STOP, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-def image_request(mark):
-    camera.resolution = (2160, 1440)
-
+def send_image(mark, path=APP_ROOT + '/rpi_image_cache/cached.jpg'):
     r = rqs.post(URL + 'login', data={'login': LOGIN, 'password': PASSWORD})
-    
-    camera.capture(APP_ROOT + '/rpi_image_cache/cached.jpg')
-    
-    img = open(APP_ROOT + '/rpi_image_cache/cached.jpg', 'rb')
+    img = open(path, 'rb')
 
     files = {'photo': img}
 
     r = rqs.post(URL + 'lk/put_mark', files=files, data={'mark': mark})
 
     img.close()
-    os.remove(APP_ROOT +'/rpi_image_cache/' + 'cached.jpg')
-    camera.resolution = (480, 320)
+    os.remove(path)
 
     s = r.text
     print(s)
-    ind = s.find('<b>')
-    if ind == -1:
-        Label(master, text= "Мы не смогли распознать изображение").pack()
+    # ind = s.find('<b>')
+    # if ind == -1:
+    #     Label(master, text= "Мы не смогли распознать изображение").pack()
+    # else:
+    #     ind2 = s.find('</b>')
+    #     Label(master, text= s[ind1+2:ind2]).pack()
+    # master.after(3000,lambda:master.destroy())
+    # master.mainloop()
+
+def send_unsended():
+    not_send = os.listdir(APP_ROOT + '/rpi_image_cache')
+    for photo in not_send:
+        if photo != 'cached.jpg':
+            mark = photo[photo.rfind('.')-1:photo.rfind('.')]
+            send_image(mark, APP_ROOT + '/rpi_image_cache/' + photo)
+
+def image_request(mark):
+    camera.resolution = (2160, 1440)
+    if check_connect():
+        camera.capture(APP_ROOT + '/rpi_image_cache/cached.jpg')
+        send_image(mark)
+        
     else:
-        ind2 = s.find('</b>')
-        Label(master, text= s[ind1+2:ind2]).pack()
-    master.after(3000,lambda:master.destroy())
-    master.mainloop()
+        not_send = os.listdir(APP_ROOT + '/rpi_image_cache')
+        camera.capture(APP_ROOT + '/rpi_image_cache/cached_not_send_' + str(len(not_send)) + '_' + mark + '.jpg')
+    
+    camera.resolution = (480, 320)
 
 
 
