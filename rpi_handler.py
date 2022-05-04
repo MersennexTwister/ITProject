@@ -55,14 +55,14 @@ def send_image(mark, path=APP_ROOT + '/rpi_image_cache/cached.jpg'):
 
     s = r.text
     print(s)
-    # ind = s.find('<b>')
-    # if ind == -1:
-    #     Label(master, text= "Мы не смогли распознать изображение").pack()
-    # else:
-    #     ind2 = s.find('</b>')
-    #     Label(master, text= s[ind1+2:ind2]).pack()
-    # master.after(3000,lambda:master.destroy())
-    # master.mainloop()
+    ind = s.find('<b>')
+    if ind == -1:
+        Label(master, text= "Мы не смогли распознать изображение").pack()
+    else:
+        ind2 = s.find('</b>')
+        Label(master, text= s[ind1+2:ind2]).pack()
+    master.after(3000,lambda:master.destroy())
+    master.mainloop()
 
 def send_unsended():
     not_send = os.listdir(APP_ROOT + '/rpi_image_cache')
