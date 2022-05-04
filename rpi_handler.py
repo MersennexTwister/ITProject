@@ -43,12 +43,16 @@ def setup():
     GPIO.setup(BUTTON_STOP, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 def send_image(mark, path=APP_ROOT + '/rpi_image_cache/cached.jpg'):
+    print("send image enter")
     r = rqs.post(URL + 'login', data={'login': LOGIN, 'password': PASSWORD})
     img = open(path, 'rb')
+    print("send image 1")
+
 
     files = {'photo': img}
 
     r = rqs.post(URL + 'lk/put_mark', files=files, data={'mark': mark})
+    print("send image 2")
 
     img.close()
     os.remove(path)
@@ -63,21 +67,29 @@ def send_image(mark, path=APP_ROOT + '/rpi_image_cache/cached.jpg'):
         Label(master, text= s[ind1+2:ind2]).pack()
     master.after(3000,lambda:master.destroy())
     master.mainloop()
+    print("send image exit")
+
 
 def send_unsended():
+    print("send_unsend enter")
     not_send = os.listdir(APP_ROOT + '/rpi_image_cache')
+    print(not_send)
     for photo in not_send:
         if photo != 'cached.jpg':
             mark = photo[photo.rfind('.')-1:photo.rfind('.')]
             send_image(mark, APP_ROOT + '/rpi_image_cache/' + photo)
+            os.remove(APP_ROOT + '/rpi_image_cache/' + photo)
+    print("send_unsend exit")
 
 def image_request(mark):
     camera.resolution = (2160, 1440)
     if check_connect():
+        print("Internet!")
         camera.capture(APP_ROOT + '/rpi_image_cache/cached.jpg')
         send_image(mark)
         
     else:
+        print("No Internet!")
         not_send = os.listdir(APP_ROOT + '/rpi_image_cache')
         camera.capture(APP_ROOT + '/rpi_image_cache/cached_not_send_' + str(len(not_send)) + '_' + mark + '.jpg')
     
