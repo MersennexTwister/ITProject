@@ -19,7 +19,8 @@
     <option><a class="dropdown-item">+</a></option>
     <option><a class="dropdown-item">-</a></option>
     </select>
-    <button type="submit" class="btn btn-success">Выставить оценку</button>
+    <button type="submit" class="btn btn-success" onclick="onClick(document.getElementById('featured-3'))">Выставить оценку</button>
   </form>
 </div>
+<script src="{{url_for('static', filename='js/index.js')}}"></script>
 {% endblock %}

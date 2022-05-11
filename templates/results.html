@@ -7,7 +7,7 @@
 
 
 {% block body %}
-<div class="container px-4 py-5">
+<div class="container px-4 py-5" id="body">
 <h2 class="pb-2 border-bottom">Таблица с оценками</h2>
 <br>
 
@@ -39,7 +39,7 @@
     </select><br>
     </div>
     <br>
-    <button type="submit" class="btn btn-success" style="margin-right: 20px;">Найти</button>
+    <button type="submit" class="btn btn-success" style="margin-right: 20px;" onclick="onClick(document.getElementById('body'))">Найти</button>
     <a href="/lk/delete_all"><button type="button" class="btn btn-outline-danger">Очистить таблицу</button></a>
     {% if type != 'unknown' %}
     <table class="table table-bordered table-striped table-sm" style="margin-top: 30px;">
@@ -75,4 +75,5 @@
     {% endif %}
 </form>
 </div>
+<script src="{{url_for('static', filename='js/index.js')}}"></script>
 {% endblock %}

@@ -4,8 +4,7 @@
 
 
 {% block body %}
-<body>
-  <div class="container px-4 py-5">
+<div class="container px-4 py-5" id = "body">
     <h2 class="pb-2 border-bottom">Добавление ученика</h2>
     <form method="post" enctype = "multipart/form-data">
       <br>
@@ -24,8 +23,8 @@
         <button type="submit" class="btn btn-outline-success" name="increase_photo_num">+</button>
         <button type="submit" class="btn btn-outline-danger" name="decrease_photo_num">-</button>
       </div>
-      <button type="submit" class="btn btn-danger" name="add_student">Добавить</button>
+      <button type="submit" class="btn btn-danger" name="add_student" onclick="onClick(document.getElementById('body'))">Добавить</button>
     </form>
-  </div>
-</body>
+  <script src="{{url_for('static', filename='js/index.js')}}"></script>
+</div>
 {% endblock %}

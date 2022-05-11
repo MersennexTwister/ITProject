@@ -16,7 +16,7 @@
         <form method="post" enctype = "multipart/form-data">
             <h2 class="pb-2 border-bottom">{{ name }}. Изменить фотографии.</h2>
             <br>
-            <button type="submit" class="btn btn-danger">Удалить выбранные фото</button><br><br>
+            <button type="submit" class="btn btn-danger" onclick="onClick(document.getElementById('featured-3'))">Удалить выбранные фото</button><br><br>
             <a href={{ link }}><button type="button" class="btn btn-primary">Добавить фотографии</button></a>
             <br><br>
             <table class="table">
@@ -43,5 +43,6 @@
         </form>
         <a href="/lk"><button class="btn btn-outline-danger">Вернуться в личный кабинет</button></a>
     </div>
+<script src="{{url_for('static', filename='js/index.js')}}"></script>
 </body>
 {% endblock %}
