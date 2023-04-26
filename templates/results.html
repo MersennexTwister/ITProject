@@ -12,24 +12,28 @@
 <br>
 
 <form method="post" enctype="multipart/form-data">
+    {% if error %}
+      <div class="alert alert-warning text-start" role="alert">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-exclamation-triangle-fill" viewBox="0 0 16 16">
+          <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+        </svg>
+        {{ error }}
+      </div>
+      {% endif %}
     <div class="input-group">
-    <select name='date-choose' class="form-select">
-    <option><a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
-        Выберите дату
-    </a></option>
-    {% for x in dataSet %}
-        <option><a class="dropdown-item">{{ x[-1] }}</a></option>
-    {% endfor %}
-    </select><br>
-    <select name='name-choose' class="form-select">
+        <input name="day" id="day" type="text" class="form-control" placeholder="День">
+        <input name="month" id="month" type="text" class="form-control" placeholder="Месяц">
+        <input name="year" id="year" type="text" class="form-control" placeholder="Год">
+    <br>
+    <select name='name-choice' class="form-select">
     <option><a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser2" data-bs-toggle="dropdown" aria-expanded="false">
         Выберите ученика
     </a></option>
-    {% for x in studentData %}
-        <option><a class="dropdown-item">{{ x }}</a></option>
+    {% for name in all_student_names %}
+        <option><a class="dropdown-item">{{ name }}</a></option>
     {% endfor %}
     </select><br>
-    <select name='class-choose' class="form-select">
+    <select name='grade-choice' class="form-select">
     <option><a href="#" class="d-block text-decoration-none dropdown-toggle" id="dropdownUser3" data-bs-toggle="dropdown" aria-expanded="false">
         Выберите класс
     </a></option>
@@ -41,38 +45,28 @@
     <br>
     <button type="submit" class="btn btn-success" style="margin-right: 20px;" onclick="onClick(document.getElementById('body'))">Найти</button>
     <a href="/lk/delete_all"><button type="button" class="btn btn-outline-danger">Очистить таблицу</button></a>
-    {% if type != 'unknown' %}
     <table class="table table-bordered table-striped table-sm" style="margin-top: 30px;">
         <thead>
         <tr>
             <th scope="col">Класс</th>
             <th scope="col">ФИО ученика</th>
-            {% for x in dates %}
-            <th scope="col">{{ x[-1] }}</th>
+            {% for date in marks_dates_list %}
+                <th scope="col">{{ date }}</th>
             {% endfor %}
         </tr>
         </thead>
         <tbody>
-            {% for el in names %}
+            {% for i in range(student_len) %}
             <tr>
-                <td>{{ el[0] }}</td>
-                <th scope="row">{{ el[1] }}</th>
-                {% for x in dates %}
-                {% if el[1] in resplus[x[-1]] and el[1] in resminus[x[-1]] %}
-                <td>{{ resplus[x[-1]][el[1]] }}/{{ resminus[x[-1]][el[1]] }}</td>
-                {% elif el[1] in resplus[x[-1]] %}
-                <td>{{ resplus[x[-1]][el[1]] }}/0</td>
-                {% elif el[1] in resminus[x[-1]] %}
-                <td>0/{{ resminus[x[-1]][el[1]] }}</td>
-                {% else %}
-                <td>0/0</td>
-                {% endif %}
+                <td>{{ student_info_list[i][0] }}</td>
+                <th scope="row">{{ student_info_list[i][1] }}</th>
+                {% for j in range(marks_len) %}
+                    <td>{{marks_info[i][j]}}</td>
                 {% endfor %}
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    {% endif %}
 </form>
 </div>
 <script src="{{url_for('static', filename='js/index.js')}}"></script>

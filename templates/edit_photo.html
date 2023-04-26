@@ -27,13 +27,13 @@
                 </tr>
                 </thead>
                 <tbody>
-                    {% for el in fList %}
+                    {% for file in files_list %}
                     <tr>
                         <th scope="row">
-                            <img src="{{ url_for('static', filename=el) }}" height="400px"/>
+                            <img src="{{ url_for('static', filename=file) }}" height="400px"/>
                         </th>
                         <td>
-                            <input type="checkbox" class="form-check-input" id={{ el }} name = {{ el }}>
+                            <input type="checkbox" class="form-check-input" id={{ file }} name = {{ file }}>
                             <label class="form-check-label" for={{ el }}>Удалить</label>
                         </td>
                     </tr>

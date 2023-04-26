@@ -1,121 +1,28 @@
-import os
-import shutil
-
-import cv2
-from flask import Flask, render_template, request, redirect, session, g
-from flask_sqlalchemy import SQLAlchemy
+import os, shutil, system_vars, strings
 from imutils import paths
-from sqlalchemy import Column, exc
-
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
-from FaceRec import FaceRec
-import pytz
-import datetime
-import sqlite3
 
-app = Flask(__name__)
-app.secret_key = '28bee993c5553ec59b3c051d535760198f6f018ed1cca1ddadcdb570352ef05b'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
+from flask import render_template, request, redirect, session, g
+from sqlalchemy import exc, func
+from funcs import *
+import cv2
+
+app = system_vars.app
+db = system_vars.db
 
 
-def get_connection_read():
-    return sqlite3.connect(APP_ROOT + 'data.db').cursor()
+def update(t_id):
+    face_rec_list[t_id].recount()
 
-def get_connection_read_write():
-    conn = sqlite3.connect(APP_ROOT + 'data.db')
-    cur = conn.cursor()
-    return conn, cur
-
-
-APP_ROOT = '/var/www/mars-project.ru/'
-
-class Teacher(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    login = db.Column(db.String(100), nullable=False)
-    password = db.Column(db.String(100), nullable=False)
-
-    def __repr__(self):
-        return '<teacher %r>' % self.id
-
-class Student(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    cl = db.Column(db.Integer, nullable=False)
-    teacher_id = db.Column(db.Integer)
-
-    def __repr__(self):
-        return '<student %r>' % self.id
-
-
-class Mark(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, nullable=False)
-    data = db.Column(db.String, nullable=False)
-
-    def __repr__(self):
-        return '<mark %r>' % self.id
-
-class Minus(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, nullable=False)
-    data = db.Column(db.String, nullable=False)
-
-    def __repr__(self):
-        return '<minus %r>' % self.id
-
-
-class Interlayer():
-    tz = pytz.timezone('Europe/Moscow')
-
-    def __init__(self):
-        self.faceRec = FaceRec(APP_ROOT)
-
-    def put_mark(self, mark_data):
-        cur = get_connection_read()
-        new_id = cur.execute('SELECT COUNT(id) FROM mark').fetchone()[0] + cur.execute('SELECT COUNT(id) FROM minus').fetchone()[0]
-        if mark_data[2]:
-            m = Mark(id=new_id, student_id=mark_data[1], data=mark_data[0])
-        else:
-            m = Minus(id=new_id, student_id=mark_data[1], data=mark_data[0])
-        db.session.add(m)
-        db.session.commit()
-
-    def recount(self):
-        self.faceRec = FaceRec(APP_ROOT)
-        self.faceRec.countFaces()
-
-    def put_mark_recognize(self, img, type):
-        face_id = self.faceRec.recogniteTheFace(img)
-
-        if face_id != -1:
-            dt = datetime.datetime.now(self.tz)
-            self.put_mark([dt.strftime("%d.%m.%Y"), face_id, type])
-
-        return face_id
-
-    def put_mark_direct(self, id, type):
-        dt = datetime.datetime.now(self.tz)
-        self.put_mark([dt.strftime("%d.%m.%Y"), id, type])
-
-interlayer = Interlayer()
-
-def update():
-    interlayer.recount()
 
 @app.before_request
 def load_logged_in_user():
-    id = session.get('user_id')
-
-    if id is None:
+    teacher_id = session.get('user_id')
+    if teacher_id is None:
         g.teacher_name = None
     else:
-        cur = get_connection_read()
-        teacher = cur.execute('SELECT * FROM teacher WHERE id = ?', (id,)).fetchone()
-        g.teacher_name = teacher[1]
+        g.teacher_name = db.session.get(system_vars.Teacher, teacher_id).name
 
 
 @app.route("/")
@@ -141,128 +48,126 @@ def error_no_access():
 @app.route("/register", methods=["POST", "GET"])
 def register():
     error = None
-    if request.method == "POST":
 
-        id = len(Teacher.query.order_by(Teacher.id).all())
+    if request.method == "POST":
+        id = db.session.query(system_vars.Teacher).count()
         name = request.form['name']
         login = request.form['login']
-        password = request.form['password']
+        password = generate_password_hash(request.form['password'])
 
         if login == '' or name == '' or password == '':
-            error = 'Заполните все поля!'
+            error = strings.fill_all_fields
 
-        t = Teacher(id = id, name = name, login = login, password = generate_password_hash(password))
-        if error == None:
+        if not check_name(name):
+            error = strings.incorrect_symbols
+
+        if error is None:
             try:
-                db.session.add(t)
+                session['add_student_photo_num'] = 3
+                session['edit_student_photo_num'] = 3
+                new_teacher = system_vars.Teacher(id=id, name=name, login=login, psw=password)
+                db.session.add(new_teacher)
                 db.session.commit()
                 session['user_id'] = id
-                return redirect('/user=' + str(id) + '/lk')
+                face_rec_list.append(system_vars.Interlayer(id))
+                return redirect('/lk')
             except exc.IntegrityError:
-                error = f'Пользватель с логином "{login}" уже зарегестрирован!'
+                error = strings.login_already_used(login)
             except:
                 return redirect('/error_register')
 
-    return render_template("register.html", error = error)
+    return render_template("register.html", error=error)
+
 
 @app.route('/login', methods=["POST", "GET"])
 def login():
     error = None
-    if request.method == "POST":
-        cur = get_connection_read()
 
+    if request.method == "POST":
         login = request.form['login']
         password = request.form['password']
+        teacher = db.session.query(system_vars.Teacher).filter_by(login=login).all()
 
-        teacher = cur.execute('SELECT * FROM teacher WHERE login = ?', (login,)).fetchone()
+        if len(teacher) == 0:
+            error = strings.incorrect_login
+        elif not check_password_hash(teacher[0].psw, password):
+            error = strings.incorrect_password
 
-        if teacher == None:
-            error = 'Неверный логин.'
-        elif not check_password_hash(teacher[3], password):
-            error = 'Неверный пароль.'
-
-        if error == None:
-            session['user_id'] = teacher[0]
+        if error is None:
+            session['user_id'] = teacher[0].id
             session['add_student_photo_num'] = 3
             session['edit_student_photo_num'] = 3
             return redirect('/lk')
 
-    return render_template("login.html", error = error)
+    return render_template("login.html", error=error)
 
 
-@app.route('/lk', methods = ["POST", "GET"])
+@app.route('/lk', methods=["POST", "GET"])
 def lk():
-    id = session.get('user_id')
-    if id is None:
+    teacher_id = session.get('user_id')
+    if teacher_id is None:
         return redirect('/error_no_access')
-    upd = session.get('is-success-upd')
-    if upd is None or upd == False:
-        g.update = False
-    else:
-        g.update = True
-    session['is-success-upd'] = False
-    toadd = session.get('is-success-add')
-    if toadd is None or toadd == "-1":
-        g.toadd = "-1"
-    else:
-        g.toadd = session['is-success-add']
-    session['is-success-add'] = "-1"
-    todel = session.get('is-success-delete')
-    if todel is None or todel == "-1":
-        g.todel = "-1"
-    else:
-        g.todel = session['is-success-delete']
-    session['is-success-delete'] = "-1"
+
+    g.update = session.get('is_success_upd')
+    session['is_success_upd'] = None
+
+    g.add = session.get('is_success_add')
+    session['is_success_add'] = None
+
+    g.delete = session.get('is_success_delete')
+    session['is-success-delete'] = None
+
     if request.method == 'POST':
-        update()
+        update(teacher_id)
         session['is-success-upd'] = True
         return redirect('/lk')
-    cur = get_connection_read()
-    ask = 'SELECT cl, name, id FROM student WHERE teacher_id = ' + str(id)
-    res = sorted(cur.execute(ask).fetchall())
-    st = []
-    for i in res:
-        st.append([i[1], i[0], 'lk/delete_student/student_id=' + str(i[2]), 'lk/edit_student/student_id=' + str(i[2])])
-    return render_template('lk.html', students=st)
+
+    our_students = sorted(db.session.query(system_vars.Student).filter_by(teacher_id=teacher_id).all(), key=(lambda x: x.name))
+    students_info = []
+    for student in our_students:
+        students_info.append([student.name, student.grade, 'lk/delete_student/student_id=' + str(student.id), 'lk/edit_student/student_id=' + str(student.id)])
+    return render_template('lk.html', students_info=students_info)
 
 
 @app.route('/lk/add_student', methods=["POST", "GET"])
 def add_student():
-    id = session.get('user_id')
-    if id is None:
+    teacher_id = session.get('user_id')
+    if teacher_id is None:
         return redirect('/error_no_access')
+
     photo_list = []
+
     def form_photo_list():
         photo_list.clear()
         for i in range(session['add_student_photo_num']):
             photo_list.append('photo' + str(i))
+
     form_photo_list()
+
     if request.method == "POST":
         if 'add_student' in request.form:
             name = request.form['surname'] + ' ' + request.form['name'] + ' ' + request.form['patronymic']
-            cl = request.form['class']
-            cur = get_connection_read()
-            ask = "SELECT COUNT(id) FROM student WHERE name = '" + name + "' AND teacher_id = " + str(id)
-            inf = cur.execute(ask).fetchone()[0]
-            if inf > 0:
-                return 'Ученик уже есть у вас в классе!'
-            ask = "SELECT MAX(id) FROM student"
-            inf = -1
-            try:
-                inf = cur.execute(ask).fetchone()[0] + 1
-            except:
-                inf = 1
+            grade = request.form['class']
+            students_size = db.session.query(system_vars.Student).filter_by(name=name, teacher_id=teacher_id).count()
 
-            UPLOAD_FOLD = 'static/faces/' + str(inf)
-            os.mkdir(APP_ROOT + 'static/faces/' + str(inf))
+            if not check_name(name):
+                return strings.incorrect_symbols
+
+            if students_size > 0:
+                return strings.student_already_exists
+            try:
+                new_id = db.session.query(func.max(system_vars.Student.id))[0][0] + 1
+            except:
+                new_id = 1
+
+            UPLOAD_FOLD = 'static/faces/' + str(new_id)
+            os.mkdir(system_vars.APP_ROOT + UPLOAD_FOLD)
 
             for photo in request.files:
                 request.files[photo].save(
-                    os.path.join(APP_ROOT + 'static/faces/' + str(inf), secure_filename(request.files[photo].filename)))
+                    os.path.join(system_vars.APP_ROOT + UPLOAD_FOLD, secure_filename(request.files[photo].filename)))
 
-            t = Student(id=inf, name=name, cl=cl, teacher_id=id)
-
-            db.session.add(t)
+            db.session.add(system_vars.Student(id=new_id, name=name, grade=grade, teacher_id=teacher_id))
             db.session.commit()
             session['is-success-add'] = name
             return redirect('/lk')
@@ -274,34 +179,34 @@ def add_student():
             session['add_student_photo_num'] = max(1, session['add_student_photo_num'] - 1)
             form_photo_list()
 
-
     return render_template('add_student.html', photo_list=photo_list)
 
 
-@app.route('/lk/delete_student/student_id=<int:st_id>', methods=["POST", "GET"])
-def delete_student(st_id):
-    id = session.get('user_id')
-    if id is None:
+@app.route('/lk/delete_student/student_id=<int:student_id>', methods=["POST", "GET"])
+def delete_student(student_id):
+    teacher_id = session.get('user_id')
+    if teacher_id is None:
         return redirect('/error_no_access')
-    cur = get_connection_read()
-    ask = "SELECT name FROM student WHERE id = " + str(st_id)
-    name = cur.execute(ask).fetchone()[0]
+
+    student = db.session.get(system_vars.Student, student_id)
+
+    if student.teacher_id != teacher_id:
+        return redirect('/error_no_access')
+
+    name = student.name
+
     if request.method == "POST":
-        conn, cur = get_connection_read_write()
-        ask = 'DELETE FROM student WHERE id = ' + str(st_id)
-        cur.execute(ask)
-        conn.commit()
-        shutil.rmtree(APP_ROOT + 'static/faces/' + str(st_id))
+        db.session.delete(student)
+        shutil.rmtree(system_vars.APP_ROOT + 'static/faces/' + str(student_id))
         session['is-success-delete'] = name
         return redirect('/lk')
+
     return render_template('delete_student.html', name=name)
 
 
 @app.route('/lk/success_page/student_id=<int:st_id>')
 def success_page(st_id):
-    ask = "SELECT name FROM student WHERE id = " + str(st_id)
-    cur = get_connection_read()
-    name = cur.execute(ask).fetchone()[0]
+    name = db.session.get(system_vars.Student, st_id).name
     return render_template('success_page.html', name=name)
 
 
@@ -312,27 +217,32 @@ def error_recognise():
 
 @app.route('/lk/put_mark', methods=['POST', 'GET'])
 def put_mark():
+    teacher_id = session.get('user_id')
+    if teacher_id is None:
+        return redirect('/error_no_access')
+
     if request.method == 'POST':
-        f = request.files['photo']
-        s = request.form['mark']
+        photo = request.files['photo']
+        mark = request.form['mark']
 
         UPLOAD_FOLD = 'site_image_cache'
-        UPLOAD_FOLDER = os.path.join(APP_ROOT, UPLOAD_FOLD)
+        UPLOAD_FOLDER = os.path.join(system_vars.APP_ROOT, UPLOAD_FOLD)
         app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-        f.save(APP_ROOT + 'site_image_cache/1.png')
-        img = cv2.imread(APP_ROOT + "site_image_cache/1.png", cv2.IMREAD_COLOR)
-        face = interlayer.put_mark_recognize(img, s == "+")
+        photo.save(system_vars.APP_ROOT + 'site_image_cache/1.png')
+        img = cv2.imread(system_vars.APP_ROOT + "site_image_cache/1.png", cv2.IMREAD_COLOR)
+        face = face_rec_list[teacher_id].put_mark_recognize(img, mark == "+")
 
         if face == -1:
-            pathList = list(paths.list_images(APP_ROOT + 'static'))
-            cnt = len(pathList) + 1
-            os.replace(APP_ROOT + 'site_image_cache/1.png', APP_ROOT + 'static/undefined_image_cache/' + str(cnt) + '.png')
+            cnt = len(paths.list_images(system_vars.APP_ROOT + 'static')) + 1
+            os.replace(system_vars.APP_ROOT + 'site_image_cache/1.png', system_vars.APP_ROOT + 'static/undefined_image_cache/' + str(cnt) + '.png')
             return redirect('/lk/error_recognise')
         else:
-            os.remove(APP_ROOT + 'site_image_cache/1.png')
+            os.remove(system_vars.APP_ROOT + 'site_image_cache/1.png')
         return redirect('/lk/success_page/student_id=' + str(face))
+
     return render_template('put_mark.html')
+
 
 @app.route('/logout')
 def logout():
@@ -342,236 +252,217 @@ def logout():
 
 @app.route('/lk/undefined_students', methods=['POST', 'GET'])
 def undefined_students():
-    id = session.get('user_id')
-    if id is None:
+    teacher_id = session.get('user_id')
+    if teacher_id is None:
         return redirect('/error_no_access')
-    iscor = session.get('is-error-us')
-    if iscor is None or iscor == False:
-        g.error = False
-    else:
-        g.error = True
-        session['is-error-us'] = False
-    pathList = list(paths.list_images(APP_ROOT + 'static/undefined_image_cache/'))
-    nameList = []
-    for p in pathList:
-        fname = p.split('/')[-1]
-        nameList.append(('undefined_image_cache/' + fname, fname[:fname.find('.')], fname[:fname.find('.')] + 'mark', fname[fname.find('.'):]))
+
+    correct = session.get('is-error')
+    g.error = correct
+    session['is-error'] = False
+
+    undefined_path_list = list(paths.list_images(system_vars.APP_ROOT + 'static/undefined_image_cache/'))
+    files_list = []
+    for p in undefined_path_list:
+        file_name = p.split('/')[-1]
+        name = file_name[:file_name.find('.')]
+        ext = file_name[file_name.find('.'):]
+        files_list.append(('undefined_image_cache/' + file_name, name, name + 'mark', ext))
 
     if request.method == 'POST':
-        for (p, id, idmark, ext) in nameList:
-            q = request.form[id]
-            s = request.form[idmark]
-            if q != 'Ошибка':
-                if s == "":
-                    session['is-error-us'] = True
+        for (path, file_id, mark_id, ext) in files_list:
+            student_name = request.form[file_id]
+            mark = request.form[mark_id]
+            if student_name != 'Ошибка':
+                if mark == "":
+                    session['is-error'] = True
                     return redirect('/lk/undefined_students')
-                cur = get_connection_read()
-                ask = 'SELECT id FROM student WHERE name = "' + q + '"'
-                idst = cur.execute(ask).fetchone()[0]
-                pathList = list(paths.list_images(APP_ROOT + 'static/faces/' + str(id)))
-                interlayer.put_mark_direct(idst, s == "+")
-                os.replace(APP_ROOT + 'static/undefined_image_cache/' + id + ext, APP_ROOT + 'static/faces/' + str(idst) + '/' + str(len(pathList) + 1) + ext)
+                student_id = db.session.query(system_vars.Student).filter_by(name=student_name).first_or_404().id
+                photo_id = len(paths.list_images(system_vars.APP_ROOT + 'static/faces/' + str(id))) + 1
+                face_rec_list[teacher_id].put_mark_direct(student_id, mark == "+")
+                os.replace(system_vars.APP_ROOT + 'static/undefined_image_cache/' + file_id + ext,
+                           system_vars.APP_ROOT + 'static/faces/' + str(student_id) + '/' + str(photo_id) + ext)
             else:
-                os.remove(APP_ROOT + 'static/undefined_image_cache/' + id + ext)
+                os.remove(system_vars.APP_ROOT + 'static/undefined_image_cache/' + file_id + ext)
         return redirect('/lk')
 
-    ask = "SELECT name FROM student WHERE teacher_id = " + str(id)
-    cur = get_connection_read()
-    nl = cur.execute(ask).fetchall()
-    stList = []
-    for name in nl:
-        stList.append(name[0])
+    queries = db.session.query(system_vars.Student).filter_by(teacher_id=teacher_id).all()
+    names_list = []
+    for q in queries:
+        names_list.append(q.name)
 
-    return render_template('undefined_students.html', fList=nameList, nameList=stList)
+    return render_template('undefined_students.html', files_list=files_list, names_list=names_list)
 
 
-@app.route('/lk/data_results/type=<string:type>', methods=['POST', 'GET'])
-def data_results(type):
-    id = session.get('user_id')
-    if id == None:
+def check_date(day, month, year):
+    if year <= 0:
+        return False
+    leap_year = (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
+    if month <= 0 or month > 12:
+        return False
+    max_day = MONTHS[month - 1] + (1 if (leap_year and month == 2) else 0)
+    if day <= 0 or day > max_day:
+        return False
+    return True
+
+
+@app.route('/lk/results/filter=<string:filter>', methods=['POST', 'GET'])
+def data_results(filter):
+    teacher_id = session.get('user_id')
+    if teacher_id is None:
         return redirect('/error_no_access')
-    if request.method == 'POST':
-        date = request.form['date-choose']
-        name = request.form['name-choose']
-        cl = request.form['class-choose']
-        session['name-choose'] = name
-        session['date-choose'] = date
-        session['class-choose'] = cl
-        return redirect('/lk/data_results/type=show')
-    cur = get_connection_read()
-    res = cur.execute(f'SELECT data FROM mark INNER JOIN student ON student.id = mark.student_id WHERE teacher_id = {id}').fetchall() + cur.execute(f'SELECT data FROM minus INNER JOIN student ON student.id = minus.student_id WHERE teacher_id = {id}').fetchall()
-    dataSet = set()
-    for i in res:
-        e = list(map(int, i[0].split('.')))
-        dataSet.add((e[2], e[1], e[0], i[0]))
-    dataSet = sorted(list(dataSet))
-    res = cur.execute(f"""SELECT student_id FROM mark
-                      INNER JOIN student ON student.id = mark.student_id
-                      WHERE teacher_id = {id}""").fetchall() + \
-          cur.execute(f"""SELECT student_id FROM minus
-                      INNER JOIN student ON student.id = minus.student_id
-                      WHERE teacher_id = {id}""").fetchall()
 
-    studentData = set()
-    for i in res:
-        st_id = i[0]
-        name = cur.execute(f'SELECT name FROM student WHERE id = {st_id}').fetchone()[0]
-        studentData.add(name)
-    studentData = sorted(list(studentData))
-    if type != 'unknown':
-        cur = get_connection_read()
-        ask = f"""SELECT student_id, data FROM mark
-         INNER JOIN student ON student.id = mark.student_id
-         WHERE teacher_id = {id} AND """
-        ask2 = f'SELECT cl, name FROM student WHERE teacher_id = {id} AND '
-        if session['name-choose'] != 'Выберите ученика':
-            name = session['name-choose']
-            s_id = cur.execute(f'SELECT id FROM student WHERE name = "{name}" AND teacher_id = {id}').fetchone()[0]
-            ask += f'student_id = {s_id} AND '
-            ask2 += f'id = {s_id} AND '
-        if session['date-choose'] != 'Выберите дату':
-            date = session['date-choose']
-            ask += f'data = "{date}" AND '
-        if session['class-choose'] != 'Выберите класс':
-            cl = session['class-choose']
-            stList = cur.execute(f'SELECT id FROM student WHERE cl = {cl} AND teacher_id = {id}').fetchall()
-            if len(stList) != 0:
-                ask += '('
-                ask2 += '('
-                for i in stList:
-                    s_id = i[0]
-                    ask += f'student_id = {s_id} OR '
-                    ask2 += f'id = {s_id} OR '
-                ask = ask[:-4]
-                ask2 = ask2[:-4]
-                ask += ')'
-                ask2 += ')'
-            else:
-                ask += 'student_id = 4 AND student_id = 5'
-                ask2 += 'id = 4 AND id = 5'
-        if ask[-5:] == ' AND ':
-            ask = ask[:-5]
-        if ask2[-5:] == ' AND ':
-            ask2 = ask2[:-5]
-        res = cur.execute(ask).fetchall()
-        d = {}
-        dates = set()
-        for i in res:
-            e = list(map(int, i[1].split('.')))
-            dates.add((e[2], e[1], e[0], i[1]))
-            d[i[1]] = {}
-        names = cur.execute(ask2).fetchall()
-        for i in res:
-            name = cur.execute(f'SELECT name FROM student WHERE id = {i[0]}').fetchone()[0]
-            if name not in d[i[1]]:
-                d[i[1]][name] = 0
-            d[i[1]][name] += 1
-        ask = f"""SELECT student_id, data FROM minus
-                 INNER JOIN student ON student.id = minus.student_id
-                 WHERE teacher_id = {id} AND """
-        ask2 = f'SELECT cl, name FROM student WHERE teacher_id = {id} AND '
-        if session['name-choose'] != 'Выберите ученика':
-            name = session['name-choose']
-            s_id = cur.execute(f'SELECT id FROM student WHERE name = "{name}" AND teacher_id = {id}').fetchone()[0]
-            ask += f'student_id = {s_id} AND '
-            ask2 += f'id = {s_id} AND '
-        if session['date-choose'] != 'Выберите дату':
-            date = session['date-choose']
-            ask += f'data = "{date}" AND '
-        if session['class-choose'] != 'Выберите класс':
-            cl = session['class-choose']
-            stList = cur.execute(f'SELECT id FROM student WHERE cl = {cl} AND teacher_id = {id}').fetchall()
-            if len(stList) != 0:
-                ask += '('
-                ask2 += '('
-                for i in stList:
-                    s_id = i[0]
-                    ask += f'student_id = {s_id} OR '
-                    ask2 += f'id = {s_id} OR '
-                ask = ask[:-4]
-                ask2 = ask2[:-4]
-                ask += ')'
-                ask2 += ')'
-            else:
-                ask += 'student_id = 4 AND student_id = 5'
-                ask2 += 'id = 4 AND id = 5'
-        if ask[-5:] == ' AND ':
-            ask = ask[:-5]
-        if ask2[-5:] == ' AND ':
-            ask2 = ask2[:-5]
-        res = cur.execute(ask).fetchall()
-        d2 = {}
-        for i in res:
-            e = list(map(int, i[1].split('.')))
-            dates.add((e[2], e[1], e[0], i[1]))
-            d2[i[1]] = {}
-        names += cur.execute(ask2).fetchall()
-        for i in res:
-            name = cur.execute(f'SELECT name FROM student WHERE id = {i[0]}').fetchone()[0]
-            if name not in d2[i[1]]:
-                d2[i[1]][name] = 0
-            d2[i[1]][name] += 1
-        names = sorted(list(set(names)))
-        dates = sorted(list(dates))
-        return render_template('results.html', type=type, dataSet=dataSet, studentData=studentData, resplus=d, resminus=d2, names=names, dates=dates)
-    return render_template('results.html', type=type, dataSet=dataSet, studentData=studentData)
+    error = None
+
+    student_list = db.session.query(system_vars.Student).filter_by(teacher_id=teacher_id).all()
+    all_student_names = []
+
+    for student in student_list:
+        all_student_names.append(student.name)
+
+    all_student_names.sort()
+
+    if request.method == 'POST':
+        str_day, str_month, str_year = request.form['day'], request.form['month'], request.form['year']
+        name = request.form['name-choice']
+        grade = request.form['grade-choice']
+        min_date = None
+
+        if str_day == '' and str_month == '' and str_year == '':
+            min_date = 0
+        else:
+            try:
+                day, month, year = int(str_day), int(str_month), int(str_year)
+                if not check_date(day, month, year):
+                    error = strings.incorrect_data
+                min_date = form_date(day, month, year)
+            except:
+                error = strings.bad_data
+
+        if name == 'Выберите ученика':
+            name = '-'
+        if grade == 'Выберите класс':
+            grade = 0
+
+        if not error:
+            return redirect(f'/lk/results/filter={name}&{grade}&{min_date}')
+
+    params = filter.split('&')
+    if len(params) != 3:
+        return 404
+
+    name, grade, min_date = params[0], int(params[1]), int(params[2])
+    query = db.session.query(system_vars.Mark, system_vars.Student).join(system_vars.Student).filter(system_vars.Mark.date >= min_date)
+
+    if name != '-':
+        query = query.filter_by(system_vars.Student.name == name)
+    if grade != 0:
+        query = query.filter_by(system_vars.Student.grade == grade)
+
+    all_marks_list = query.all()
+    student_info_list, marks_dates_list = [], []
+
+    for mark, student in all_marks_list:
+        student_info_list.append((student.grade, student.name))
+        marks_dates_list.append(mark.date)
+
+    student_info_list = sorted(list(set(student_info_list)))
+    marks_dates_list = sorted(list(set(marks_dates_list)))
+
+    student_dict, marks_dict = {}, {}
+
+    marks_info = [[[0, 0] for _ in range(len(marks_dates_list))] for _ in range(len(student_info_list))]
+
+    for i in range(len(student_info_list)):
+        student_dict[student_info_list[i][1]] = i
+    for i in range(len(marks_dates_list)):
+        marks_dict[marks_dates_list[i]] = i
+
+    for mark, student in all_marks_list:
+        marks_info[student_dict[student.name]][marks_dict[mark.date]][0 if mark.type == 1 else 1] += 1
+
+    for i in range(len(marks_info)):
+        for j in range(len(marks_info[i])):
+            marks_info[i][j] = f"{marks_info[i][j][0]}/{marks_info[i][j][1]}"
+
+    for i in range(len(marks_dates_list)):
+        date = marks_dates_list[i]
+        day = date % 100
+        date //= 100
+        month = date % 100
+        date //= 100
+        year = date
+        marks_dates_list[i] = form_string_date(day, month, year)
+
+    return render_template("results.html",
+                           all_student_names=all_student_names,
+                           student_info_list=student_info_list,
+                           marks_dates_list=marks_dates_list,
+                           student_len=len(student_info_list),
+                           marks_len=len(marks_dates_list),
+                           marks_info=marks_info, error=error)
 
 
 @app.route('/lk/delete_all', methods=['POST', 'GET'])
 def delete_all():
-    id = session.get('user_id')
-    if id == None:
+    teacher_id = session.get('user_id')
+    if teacher_id is None:
         return redirect('/error_no_access')
     if request.method == 'POST':
-        conn, cur = get_connection_read_write()
-        cur.execute(f'DELETE FROM mark WHERE student_id IN(SELECT student_id FROM mark INNER JOIN student ON student.id = mark.student_id WHERE teacher_id = {id})')
-        cur.execute(f'DELETE FROM minus WHERE student_id IN(SELECT student_id FROM minus INNER JOIN student ON student.id = minus.student_id WHERE teacher_id = {id})')
-        conn.commit()
+        to_delete_list = db.session.query(system_vars.Mark, system_vars.Student).join(system_vars.Student).filter(system_vars.Student.teacher_id == teacher_id).all()
+        for mark, student in to_delete_list:
+            db.session.delete(mark)
+        db.session.commit()
         return redirect('/lk/data_results/type=unknown')
     return render_template('delete_all.html')
 
-@app.route('/lk/edit_student_photo/student_id=<int:st_id>', methods=['POST', 'GET'])
-def edit_photo(st_id):
-    id = session.get('user_id')
-    if id == None:
-        return redirect('/error_no_access')
-    cur = get_connection_read()
-    name = cur.execute(f'SELECT name FROM student WHERE id = {st_id}').fetchone()[0]
-    pathList = list(paths.list_images(APP_ROOT + f'static/faces/{st_id}/'))
-    q = []
-    for p in pathList:
-        fname = p.split('/')[-1]
-        q.append(f'faces/{st_id}/' + fname)
-    if request.method == "POST":
-        for path in q:
-            ist = request.form.get(path)
-            if ist is not None:
-                os.remove(APP_ROOT + 'static/' + path)
-        return redirect(f'/lk/edit_student_photo/student_id={st_id}')
-    return render_template('edit_photo.html', name=name, fList = q, link=f"/lk/add_student_photo/student_id={st_id}")
 
-@app.route('/lk/add_student_photo/student_id=<int:st_id>', methods=["POST", "GET"])
-def add_photo(st_id):
-    id = session.get('user_id')
-    if id == None:
+@app.route('/lk/edit_student_photo/student_id=<int:student_id>', methods=['POST', 'GET'])
+def edit_photo(student_id):
+    teacher_id = session.get('user_id')
+    if teacher_id is None:
+        return redirect('/error_no_access')
+
+    name = db.session.get(system_vars.Student, student_id).name
+    path_list = list(paths.list_images(system_vars.APP_ROOT + f'static/faces/{student_id}/'))
+    files_list = []
+
+    for p in path_list:
+        file_name = p.split('/')[-1]
+        files_list.append(f'faces/{student_id}/' + file_name)
+
+    if request.method == "POST":
+        for path in files_list:
+            is_deleted = request.form.get(path)
+            if is_deleted is not None:
+                os.remove(system_vars.APP_ROOT + 'static/' + path)
+        return redirect(f'/lk/edit_student_photo/student_id={student_id}')
+
+    return render_template('edit_photo.html', name=name, files_list=files_list,
+                           link=f"/lk/add_student_photo/student_id={student_id}")
+
+
+@app.route('/lk/add_student_photo/student_id=<int:student_id>', methods=["POST", "GET"])
+def add_photo(student_id):
+    teacher_id = session.get('user_id')
+    if teacher_id is None:
         return redirect('/error_no_access')
     photo_list = []
-    cur = get_connection_read()
-    name = cur.execute(f'SELECT name FROM student WHERE id = {st_id}').fetchone()[0]
+    name = db.session.get(system_vars.Student, student_id).name
+
     def form_photo_list():
         photo_list.clear()
         for i in range(session['edit_student_photo_num']):
             photo_list.append('photo' + str(i))
 
     form_photo_list()
+
     if request.method == "POST":
         if 'add_photo' in request.form:
             for photo in request.files:
                 request.files[photo].save(
-                    os.path.join(APP_ROOT + 'static/faces/' + str(st_id), secure_filename(request.files[photo].filename)))
-
-            return redirect(f'/lk/edit_student_photo/student_id={st_id}')
-
+                    os.path.join(system_vars.APP_ROOT + 'static/faces/' + str(student_id),
+                                 secure_filename(request.files[photo].filename)))
+            return redirect(f'/lk/edit_student_photo/student_id={student_id}')
         elif 'increase_photo_num' in request.form:
             session['edit_student_photo_num'] += 1
             form_photo_list()
@@ -582,21 +473,35 @@ def add_photo(st_id):
     return render_template('edit_student_photo.html', photo_list=photo_list, name=name)
 
 
-@app.route('/lk/edit_student/student_id=<int:st_id>', methods=['POST', 'GET'])
-def edit_student(st_id):
-    id = session.get('user_id')
-    if id == None:
+@app.route('/lk/edit_student/student_id=<int:student_id>', methods=['POST', 'GET'])
+def edit_student(student_id):
+    teacher_id = session.get('user_id')
+    if teacher_id is None:
         return redirect('/error_no_access')
-    conn, cur = get_connection_read_write()
+
+    student = db.session.get(system_vars.Student, student_id)
+
     if request.method == 'POST':
-        cur.execute(f'UPDATE student SET name = "{request.form["surname"] + " " + request.form["name"] + " " + request.form["patronymic"]}" WHERE teacher_id = {id} AND id = {st_id}')
-        cur.execute(f'UPDATE student SET cl = {int(request.form["cl"].split()[0])} WHERE teacher_id = {id} AND id = {st_id}')
-        conn.commit()
+        student.name = request.form["surname"] + " " + request.form["name"] + " " + request.form["patronymic"]
+        student.grade = int(request.form["grade"].split()[0])
+        db.session.commit()
         return redirect('/lk')
-    name = cur.execute(f'SELECT name FROM student WHERE teacher_id = {id} AND id = {st_id}').fetchone()[0]
-    cl = cur.execute(f'SELECT cl FROM student WHERE teacher_id = {id} AND id = {st_id}').fetchone()[0]
-    nameList = name.split()
-    return render_template('enter_student.html', st_name=name, st_class=f"{cl} класс", nameList=nameList, link=f"/lk/edit_student_photo/student_id={st_id}")
+
+    name_list = student.name.split()
+    return render_template('enter_student.html', student_name=student.name, student_grade=f"{student.grade} класс",
+                           name_list=name_list, link=f"/lk/edit_student_photo/student_id={student_id}")
+
+
+face_rec_list = []
+
+
+def init_before_requests():
+    with app.app_context():
+        teachers_size = db.session.query(system_vars.Teacher).count()
+    for i in range(teachers_size):
+        face_rec_list.append(system_vars.Interlayer(teacher_id=i))
+
 
 if __name__ == "__main__":
+    init_before_requests()
     app.run(host='0.0.0.0')
