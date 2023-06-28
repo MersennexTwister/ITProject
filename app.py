@@ -1,4 +1,5 @@
 import os, shutil, system_vars, strings
+import interlayer
 from imutils import paths
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -11,9 +12,13 @@ import cv2
 app = system_vars.app
 db = system_vars.db
 
+def write_to_log(info):
+    log = open(system_vars.APP_ROOT + "log/error.log", "a")
+    log.write(info + '\n\n')
+    log.close()
 
 def update(t_id):
-    face_rec_list[t_id].recount()
+    interlayer.recount(t_id)
 
 
 @app.before_request
@@ -44,6 +49,9 @@ def about():
 def error_no_access():
     return render_template('error_no_access.html')
 
+@app.route('/error_register')
+def error_register():
+    return render_template('error_register.html')
 
 @app.route("/register", methods=["POST", "GET"])
 def register():
@@ -68,13 +76,15 @@ def register():
                 new_teacher = system_vars.Teacher(id=id, name=name, login=login, psw=password)
                 db.session.add(new_teacher)
                 db.session.commit()
-                session['user_id'] = id
-                face_rec_list.append(system_vars.Interlayer(id))
-                return redirect('/lk')
             except exc.IntegrityError:
                 error = strings.login_already_used(login)
+                return render_template("register.html", error=error)
             except:
                 return redirect('/error_register')
+            session['user_id'] = id
+            interlayer.create_teacher(id)
+            return redirect('/lk')
+
 
     return render_template("register.html", error=error)
 
@@ -231,10 +241,10 @@ def put_mark():
 
         photo.save(system_vars.APP_ROOT + 'site_image_cache/1.png')
         img = cv2.imread(system_vars.APP_ROOT + "site_image_cache/1.png", cv2.IMREAD_COLOR)
-        face = face_rec_list[teacher_id].put_mark_recognize(img, mark == "+")
+        face = interlayer.put_mark_recognize(teacher_id, img, mark == "+")
 
         if face == -1:
-            cnt = len(paths.list_images(system_vars.APP_ROOT + 'static')) + 1
+            cnt = len(list(paths.list_images(system_vars.APP_ROOT + 'static'))) + 1
             os.replace(system_vars.APP_ROOT + 'site_image_cache/1.png', system_vars.APP_ROOT + 'static/undefined_image_cache/' + str(cnt) + '.png')
             return redirect('/lk/error_recognise')
         else:
@@ -277,8 +287,8 @@ def undefined_students():
                     session['is-error'] = True
                     return redirect('/lk/undefined_students')
                 student_id = db.session.query(system_vars.Student).filter_by(name=student_name).first_or_404().id
-                photo_id = len(paths.list_images(system_vars.APP_ROOT + 'static/faces/' + str(id))) + 1
-                face_rec_list[teacher_id].put_mark_direct(student_id, mark == "+")
+                photo_id = len(list(paths.list_images(system_vars.APP_ROOT + 'static/faces/' + str(id)))) + 1
+                interlayer.put_mark_direct(student_id, mark == "+")
                 os.replace(system_vars.APP_ROOT + 'static/undefined_image_cache/' + file_id + ext,
                            system_vars.APP_ROOT + 'static/faces/' + str(student_id) + '/' + str(photo_id) + ext)
             else:
@@ -353,10 +363,12 @@ def data_results(filter):
     name, grade, min_date = params[0], int(params[1]), int(params[2])
     query = db.session.query(system_vars.Mark, system_vars.Student).join(system_vars.Student).filter(system_vars.Mark.date >= min_date)
 
+    query = query.filter_by(teacher_id=teacher_id)
+
     if name != '-':
-        query = query.filter_by(system_vars.Student.name == name)
+        query = query.filter_by(name=name)
     if grade != 0:
-        query = query.filter_by(system_vars.Student.grade == grade)
+        query = query.filter_by(grade=grade)
 
     all_marks_list = query.all()
     student_info_list, marks_dates_list = [], []
@@ -366,6 +378,7 @@ def data_results(filter):
         marks_dates_list.append(mark.date)
 
     student_info_list = sorted(list(set(student_info_list)))
+
     marks_dates_list = sorted(list(set(marks_dates_list)))
 
     student_dict, marks_dict = {}, {}
@@ -492,16 +505,15 @@ def edit_student(student_id):
                            name_list=name_list, link=f"/lk/edit_student_photo/student_id={student_id}")
 
 
-face_rec_list = []
-
-
 def init_before_requests():
+    open(system_vars.APP_ROOT + 'log/error.log', "w").close()
     with app.app_context():
-        teachers_size = db.session.query(system_vars.Teacher).count()
+        teachers_size = db.session.query(system_vars.Teacher).count() 
     for i in range(teachers_size):
-        face_rec_list.append(system_vars.Interlayer(teacher_id=i))
+        interlayer.create_teacher(i)
+    
 
+init_before_requests()
 
 if __name__ == "__main__":
-    init_before_requests()
     app.run(host='0.0.0.0')
