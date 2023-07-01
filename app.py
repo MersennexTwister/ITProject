@@ -12,6 +12,8 @@ import cv2
 app = system_vars.app
 db = system_vars.db
 
+PHOTO_SIZE_CONST = 1
+
 def write_to_log(info):
     log = open(system_vars.APP_ROOT + "log/error.log", "a")
     log.write(info + '\n\n')
@@ -132,7 +134,7 @@ def lk():
         session['is-success-upd'] = True
         return redirect('/lk')
 
-    our_students = sorted(db.session.query(system_vars.Student).filter_by(teacher_id=teacher_id).all(), key=(lambda x: x.name))
+    our_students = sorted(db.session.query(system_vars.Student).filter_by(teacher_id=teacher_id).all(), key=(lambda x: (x.grade, x.name)))
     students_info = []
     for student in our_students:
         students_info.append([student.name, student.grade, 'lk/delete_student/student_id=' + str(student.id), 'lk/edit_student/student_id=' + str(student.id)])
@@ -149,45 +151,38 @@ def add_student():
 
     def form_photo_list():
         photo_list.clear()
-        for i in range(session['add_student_photo_num']):
+        for i in range(PHOTO_SIZE_CONST):
             photo_list.append('photo' + str(i))
+        g.photo_num = PHOTO_SIZE_CONST
 
     form_photo_list()
 
     if request.method == "POST":
-        if 'add_student' in request.form:
-            name = request.form['surname'] + ' ' + request.form['name'] + ' ' + request.form['patronymic']
-            grade = request.form['class']
-            students_size = db.session.query(system_vars.Student).filter_by(name=name, teacher_id=teacher_id).count()
+        name = request.form['surname'] + ' ' + request.form['name'] + ' ' + request.form['patronymic']
+        grade = request.form['class']
+        students_size = db.session.query(system_vars.Student).filter_by(name=name, teacher_id=teacher_id).count()
 
-            if not check_name(name):
-                return strings.incorrect_symbols
+        if not check_name(name):
+            return strings.incorrect_symbols
 
-            if students_size > 0:
-                return strings.student_already_exists
-            try:
-                new_id = db.session.query(func.max(system_vars.Student.id))[0][0] + 1
-            except:
-                new_id = 1
+        if students_size > 0:
+            return strings.student_already_exists
+        try:
+            new_id = db.session.query(func.max(system_vars.Student.id))[0][0] + 1
+        except:
+            new_id = 1
 
-            UPLOAD_FOLD = 'static/faces/' + str(new_id)
-            os.mkdir(system_vars.APP_ROOT + UPLOAD_FOLD)
+        UPLOAD_FOLD = 'static/faces/' + str(new_id)
+        os.mkdir(system_vars.APP_ROOT + UPLOAD_FOLD)
 
-            for photo in request.files:
-                request.files[photo].save(
-                    os.path.join(system_vars.APP_ROOT + UPLOAD_FOLD, secure_filename(request.files[photo].filename)))
+        for photo in request.files:
+            request.files[photo].save(
+                os.path.join(system_vars.APP_ROOT + UPLOAD_FOLD, secure_filename(request.files[photo].filename)))
 
-            db.session.add(system_vars.Student(id=new_id, name=name, grade=grade, teacher_id=teacher_id))
-            db.session.commit()
-            session['is-success-add'] = name
-            return redirect('/lk')
-
-        elif 'increase_photo_num' in request.form:
-            session['add_student_photo_num'] = session['add_student_photo_num'] + 1
-            form_photo_list()
-        elif 'decrease_photo_num' in request.form:
-            session['add_student_photo_num'] = max(1, session['add_student_photo_num'] - 1)
-            form_photo_list()
+        db.session.add(system_vars.Student(id=new_id, name=name, grade=grade, teacher_id=teacher_id))
+        db.session.commit()
+        session['is-success-add'] = name
+        return redirect('/lk')
 
     return render_template('add_student.html', photo_list=photo_list)
 
@@ -392,10 +387,6 @@ def data_results(filter):
 
     for mark, student in all_marks_list:
         marks_info[student_dict[student.name]][marks_dict[mark.date]][0 if mark.type == 1 else 1] += 1
-
-    for i in range(len(marks_info)):
-        for j in range(len(marks_info[i])):
-            marks_info[i][j] = f"{marks_info[i][j][0]}/{marks_info[i][j][1]}"
 
     for i in range(len(marks_dates_list)):
         date = marks_dates_list[i]

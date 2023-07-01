@@ -6,9 +6,15 @@
 {% block body %}
 <div class="container px-4 py-5" id = "body">
     <h2 class="pb-2 border-bottom">Добавление ученика</h2>
-    <form method="post" enctype = "multipart/form-data">
+    <form method="post" enctype = "multipart/form-data" id="fms">
       <br>
-      <div class="input-group">
+      <div class="btn-group">
+        <button type="button" class="btn btn-outline-success" name="increase_photo_num" onclick="on_inc()">+</button>
+        <button type="button" class="btn btn-outline-danger" name="decrease_photo_num" onclick="on_del()">-</button>
+      </div>
+      <button type="submit" class="btn btn-danger" name="add_student" onclick="onClick(document.getElementById('body'))">Добавить</button>
+      <br><br>
+      <div class="input-group" id="forms">
         <input type="text" name="surname" id="surname" class="form-control" placeholder="Фамилия">
         <input type="text" name="name" id="name" class="form-control" placeholder="Имя">
         <input type="text" name="patronymic" id="patronymic" class="form-control" placeholder="Отчество">
@@ -16,15 +22,41 @@
       <br>
       <input type="text" name="class" id="class" class="form-control" placeholder="Класс обучения"><br>
       {% for i in photo_list %}
-          <input name={{ i }} id={{ i }} type="file" class="form-control">
-          <br>
+          <input name="{{ i }}" id="{{ i }}" type="file" class="form-control">
+          <br id="{{ i }}br">
       {% endfor %}
-      <div class="btn-group">
-        <button type="submit" class="btn btn-outline-success" name="increase_photo_num">+</button>
-        <button type="submit" class="btn btn-outline-danger" name="decrease_photo_num">-</button>
-      </div>
-      <button type="submit" class="btn btn-danger" name="add_student" onclick="onClick(document.getElementById('body'))">Добавить</button>
     </form>
   <script src="{{url_for('static', filename='js/index.js')}}"></script>
+  <script>
+    let photo_num = "{{ g.photo_num }}"
+    photo_num = parseInt(photo_num)
+    
+    function on_inc() {
+      parent = document.getElementById("fms")
+      toadd = document.createElement("input")
+      toadd.type = "file"
+      toadd.className = "form-control"
+      str = "photo" + photo_num
+      photo_num += 1
+      toadd.id = str
+      toadd.name = str
+      br = document.createElement("br")
+      br.id = "photo" + (photo_num - 1) + "br"
+      parent.appendChild(toadd)
+      parent.appendChild(br)
+    }
+
+    function on_del() {
+      if (photo_num == 1) {
+        return
+      }
+      photo_num -= 1
+      parent = document.getElementById("fms")
+      el = document.getElementById("photo" + photo_num)
+      br = document.getElementById("photo" + photo_num + "br")
+      parent.removeChild(el)
+      parent.removeChild(br)
+    }
+  </script>
 </div>
 {% endblock %}
