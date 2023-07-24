@@ -10,7 +10,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 
-APP_ROOT = '/var/www/proj/'
+# APP_ROOT = '/var/www/proj/'
+APP_ROOT = '/home/semen/Development/project-mars/'
 # APP_ROOT = 'C:/Users/user/Documents/IT/project-mars-main/'
 
 
@@ -26,7 +27,7 @@ class Teacher(db.Model):
 
 class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), unique=True)
+    name = db.Column(db.String(50))
     grade = db.Column(db.Integer)
     teacher_id = db.Column(db.Integer, db.ForeignKey("teacher.id"))
 

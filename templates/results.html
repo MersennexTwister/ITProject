@@ -61,7 +61,10 @@
                 <td>{{ student_info_list[i][0] }}</td>
                 <th scope="row">{{ student_info_list[i][1] }}</th>
                 {% for j in range(marks_len) %}
-                    <td>{{marks_info[i][j]}}</td>
+                    <td><img src="{{ url_for('static', filename='img/green.svg') }}" alt="" width="20px"> : {{marks_info[i][j][0]}}
+                        <br>
+                        <img src="{{ url_for('static', filename='img/red.svg') }}" alt="" width="20px"> : {{marks_info[i][j][1]}}
+                    </td>
                 {% endfor %}
             </tr>
             {% endfor %}
