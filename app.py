@@ -416,7 +416,7 @@ def delete_all():
         for mark, student in to_delete_list:
             db.session.delete(mark)
         db.session.commit()
-        return redirect('/lk/data_results/type=unknown')
+        return redirect('/lk/results/filter=-&0&0')
     return render_template('delete_all.html')
 
 
