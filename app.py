@@ -14,11 +14,6 @@ db = system_vars.db
 
 PHOTO_SIZE_CONST = 1
 
-def write_to_log(info):
-    log = open(system_vars.APP_ROOT + "log/error.log", "a")
-    log.write(info + '\n\n')
-    log.close()
-
 def update(t_id):
     interlayer.recount(t_id)
 
@@ -178,7 +173,6 @@ def add_student():
         for photo in request.files:
             request.files[photo].save(
                 os.path.join(system_vars.APP_ROOT + UPLOAD_FOLD, secure_filename(request.files[photo].filename)))
-
         db.session.add(system_vars.Student(id=new_id, name=name, grade=grade, teacher_id=teacher_id))
         db.session.commit()
         session['is-success-add'] = name
@@ -204,6 +198,7 @@ def delete_student(student_id):
         db.session.delete(student)
         shutil.rmtree(system_vars.APP_ROOT + 'static/faces/' + str(student_id))
         session['is-success-delete'] = name
+        db.session.commit()
         return redirect('/lk')
 
     return render_template('delete_student.html', name=name)
@@ -455,8 +450,9 @@ def add_photo(student_id):
 
     def form_photo_list():
         photo_list.clear()
-        for i in range(session['edit_student_photo_num']):
+        for i in range(PHOTO_SIZE_CONST):
             photo_list.append('photo' + str(i))
+        g.photo_num = PHOTO_SIZE_CONST
 
     form_photo_list()
 

@@ -6,13 +6,13 @@ import funcs
 app = Flask(__name__)
 app.secret_key = '28bee993c5553ec59b3c051d535760198f6f018ed1cca1ddadcdb570352ef05b'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mars.db'
-app.config['MAX_CONTENT_LENGTH'] = 20000000
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['MAX_CONTENT_LENGTH'] = 20000000
 db = SQLAlchemy(app)
 
 
-# APP_ROOT = '/var/www/proj/'
-APP_ROOT = '/home/semen/Development/project-mars/'
+APP_ROOT = '/var/www/proj/'
+# APP_ROOT = '/home/semen/Development/project-mars/'
 # APP_ROOT = 'C:/Users/user/Documents/IT/project-mars-main/'
 
 
