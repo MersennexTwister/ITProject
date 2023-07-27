@@ -3,12 +3,7 @@ import os
 import RPi.GPIO as GPIO
 import time
 import picamera
-from tkinter import *
-from tkinter import ttk
-
-master = Tk()
-W, H = 100, 100
-master.geometry("100x100")
+from bs4 import BeautifulSoup
 
 BUTTON_P = 8
 BUTTON_M = 10
@@ -18,9 +13,9 @@ DELAY_SEC = 0.05
 prev_p, cur_p = False, False
 prev_m, cur_m = False, False
 
-URL = 'https://mars-project.ru/'
-LOGIN = 'testlogin44'
-PASSWORD = 'testpassword44'
+URL = 'http://176.120.8.20/'
+LOGIN = 'admin'
+PASSWORD = 'admin'
 APP_ROOT = '/home/pi/project-mars'
 
 camera = picamera.PiCamera()
@@ -52,15 +47,13 @@ def image_request(mark):
     camera.resolution = (480, 320)
 
     s = r.text
-    print(s)
-    ind = s.find('<b>')
-    if ind == -1:
-        Label(master, text= "Мы не смогли распознать изображение").pack()
+    soup = BeautifulSoup(s, 'html.parser')
+
+    data = soup.findAll('b')
+    if len(data) == 0:
+        print('Система не смогла распознать ученика в камере')
     else:
-        ind2 = s.find('</b>')
-        Label(master, text= s[ind1+2:ind2]).pack()
-    master.after(3000,lambda:master.destroy())
-    master.mainloop()
+        print(f'Имя ученика: {data[0].text}')
 
 
 
