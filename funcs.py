@@ -1,7 +1,7 @@
-import system_vars
+import system
 
 def write_to_log(info):
-    log = open(system_vars.APP_ROOT + "log/error.log", "a")
+    log = open(system.APP_ROOT + "log/error.log", "a")
     log.write(info + '\n\n')
     log.close()
 

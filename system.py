@@ -11,11 +11,6 @@ app.config['MAX_CONTENT_LENGTH'] = 20000000
 db = SQLAlchemy(app)
 
 
-APP_ROOT = '/var/www/proj/'
-# APP_ROOT = '/home/semen/Development/project-mars/'
-# APP_ROOT = 'C:/Users/user/Documents/IT/project-mars-main/'
-
-
 class Teacher(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50))

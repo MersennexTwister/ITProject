@@ -1,18 +1,23 @@
-import os, shutil, system_vars, strings
+import os, shutil, strings, configparser
 import interlayer
 from imutils import paths
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
+from system import *
+from datetime import timedelta
 
-from flask import render_template, request, redirect, session, g
+from flask import render_template, request, redirect, session, g, url_for
 from sqlalchemy import exc, func
 from funcs import *
 import cv2
 
-app = system_vars.app
-db = system_vars.db
-
 PHOTO_SIZE_CONST = 1
+
+parser = configparser.ConfigParser()
+parser.read('config.ini')
+
+APP_ROOT = parser['path']['root']
+SESSION_DUR = int(parser['session']['time'])
 
 def update(t_id):
     interlayer.recount(t_id)
@@ -20,11 +25,13 @@ def update(t_id):
 
 @app.before_request
 def load_logged_in_user():
+    session.permanent = True
+    app.permanent_session_lifetime = timedelta(minutes=SESSION_DUR)
     teacher_id = session.get('user_id')
     if teacher_id is None:
         g.teacher_name = None
     else:
-        g.teacher_name = db.session.get(system_vars.Teacher, teacher_id).name
+        g.teacher_name = db.session.get(Teacher, teacher_id).name
 
 
 @app.route("/")
@@ -55,7 +62,7 @@ def register():
     error = None
 
     if request.method == "POST":
-        id = db.session.query(system_vars.Teacher).count()
+        id = db.session.query(Teacher).count()
         name = request.form['name']
         login = request.form['login']
         password = generate_password_hash(request.form['password'])
@@ -70,7 +77,7 @@ def register():
             try:
                 session['add_student_photo_num'] = 3
                 session['edit_student_photo_num'] = 3
-                new_teacher = system_vars.Teacher(id=id, name=name, login=login, psw=password)
+                new_teacher = Teacher(id=id, name=name, login=login, psw=password)
                 db.session.add(new_teacher)
                 db.session.commit()
             except exc.IntegrityError:
@@ -78,6 +85,8 @@ def register():
                 return render_template("register.html", error=error)
             except:
                 return redirect('/error_register')
+            UPLOAD_FOLD = 'static/undefined_image_cache/' + str(id)
+            os.system(f"mkdir {APP_ROOT}{UPLOAD_FOLD}")
             session['user_id'] = id
             interlayer.create_teacher(id)
             return redirect('/lk')
@@ -93,7 +102,7 @@ def login():
     if request.method == "POST":
         login = request.form['login']
         password = request.form['password']
-        teacher = db.session.query(system_vars.Teacher).filter_by(login=login).all()
+        teacher = db.session.query(Teacher).filter_by(login=login).all()
 
         if len(teacher) == 0:
             error = strings.incorrect_login
@@ -129,7 +138,7 @@ def lk():
         session['is-success-upd'] = True
         return redirect('/lk')
 
-    our_students = sorted(db.session.query(system_vars.Student).filter_by(teacher_id=teacher_id).all(), key=(lambda x: (x.grade, x.name)))
+    our_students = sorted(db.session.query(Student).filter_by(teacher_id=teacher_id).all(), key=(lambda x: (x.grade, x.name)))
     students_info = []
     for student in our_students:
         students_info.append([student.name, student.grade, 'lk/delete_student/student_id=' + str(student.id), 'lk/edit_student/student_id=' + str(student.id)])
@@ -155,7 +164,7 @@ def add_student():
     if request.method == "POST":
         name = request.form['surname'] + ' ' + request.form['name'] + ' ' + request.form['patronymic']
         grade = request.form['class']
-        students_size = db.session.query(system_vars.Student).filter_by(name=name, teacher_id=teacher_id).count()
+        students_size = db.session.query(Student).filter_by(name=name, teacher_id=teacher_id).count()
 
         if not check_name(name):
             return strings.incorrect_symbols
@@ -163,17 +172,17 @@ def add_student():
         if students_size > 0:
             return strings.student_already_exists
         try:
-            new_id = db.session.query(func.max(system_vars.Student.id))[0][0] + 1
+            new_id = db.session.query(func.max(Student.id))[0][0] + 1
         except:
             new_id = 1
 
         UPLOAD_FOLD = 'static/faces/' + str(new_id)
-        os.mkdir(system_vars.APP_ROOT + UPLOAD_FOLD)
+        os.system(f"mkdir {APP_ROOT}{UPLOAD_FOLD}")
 
         for photo in request.files:
             request.files[photo].save(
-                os.path.join(system_vars.APP_ROOT + UPLOAD_FOLD, secure_filename(request.files[photo].filename)))
-        db.session.add(system_vars.Student(id=new_id, name=name, grade=grade, teacher_id=teacher_id))
+                os.path.join(APP_ROOT + UPLOAD_FOLD, secure_filename(request.files[photo].filename)))
+        db.session.add(Student(id=new_id, name=name, grade=grade, teacher_id=teacher_id))
         db.session.commit()
         session['is-success-add'] = name
         return redirect('/lk')
@@ -187,7 +196,7 @@ def delete_student(student_id):
     if teacher_id is None:
         return redirect('/error_no_access')
 
-    student = db.session.get(system_vars.Student, student_id)
+    student = db.session.get(Student, student_id)
 
     if student.teacher_id != teacher_id:
         return redirect('/error_no_access')
@@ -196,7 +205,7 @@ def delete_student(student_id):
 
     if request.method == "POST":
         db.session.delete(student)
-        shutil.rmtree(system_vars.APP_ROOT + 'static/faces/' + str(student_id))
+        shutil.rmtree(APP_ROOT + 'static/faces/' + str(student_id))
         session['is-success-delete'] = name
         db.session.commit()
         return redirect('/lk')
@@ -206,7 +215,7 @@ def delete_student(student_id):
 
 @app.route('/lk/success_page/student_id=<int:st_id>')
 def success_page(st_id):
-    name = db.session.get(system_vars.Student, st_id).name
+    name = db.session.get(Student, st_id).name
     return render_template('success_page.html', name=name)
 
 
@@ -226,19 +235,20 @@ def put_mark():
         mark = request.form['mark']
 
         UPLOAD_FOLD = 'site_image_cache'
-        UPLOAD_FOLDER = os.path.join(system_vars.APP_ROOT, UPLOAD_FOLD)
+        UPLOAD_FOLDER = os.path.join(APP_ROOT, UPLOAD_FOLD)
         app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-        photo.save(system_vars.APP_ROOT + 'site_image_cache/1.png')
-        img = cv2.imread(system_vars.APP_ROOT + "site_image_cache/1.png", cv2.IMREAD_COLOR)
+        photo.save(APP_ROOT + 'site_image_cache/1.png')
+        img = cv2.imread(APP_ROOT + "site_image_cache/1.png", cv2.IMREAD_COLOR)
         face = interlayer.put_mark_recognize(teacher_id, img, mark == "+")
 
         if face == -1:
-            cnt = len(list(paths.list_images(system_vars.APP_ROOT + 'static'))) + 1
-            os.replace(system_vars.APP_ROOT + 'site_image_cache/1.png', system_vars.APP_ROOT + 'static/undefined_image_cache/' + str(cnt) + '.png')
+            UPLOAD_FOLD = f'static/undefined_image_cache/{teacher_id}/'
+            cnt = len(list(paths.list_images(APP_ROOT + UPLOAD_FOLD))) + 1
+            os.replace(APP_ROOT + 'site_image_cache/1.png', APP_ROOT + UPLOAD_FOLD + str(cnt) + '.png')
             return redirect('/lk/error_recognise')
         else:
-            os.remove(system_vars.APP_ROOT + 'site_image_cache/1.png')
+            os.remove(APP_ROOT + 'site_image_cache/1.png')
         return redirect('/lk/success_page/student_id=' + str(face))
 
     return render_template('put_mark.html')
@@ -260,13 +270,13 @@ def undefined_students():
     g.error = correct
     session['is-error'] = False
 
-    undefined_path_list = list(paths.list_images(system_vars.APP_ROOT + 'static/undefined_image_cache/'))
+    undefined_path_list = list(paths.list_images(APP_ROOT + f'static/undefined_image_cache/{teacher_id}'))
     files_list = []
     for p in undefined_path_list:
         file_name = p.split('/')[-1]
         name = file_name[:file_name.find('.')]
         ext = file_name[file_name.find('.'):]
-        files_list.append(('undefined_image_cache/' + file_name, name, name + 'mark', ext))
+        files_list.append((f'undefined_image_cache/{teacher_id}/' + file_name, name, name + 'mark', ext))
 
     if request.method == 'POST':
         for (path, file_id, mark_id, ext) in files_list:
@@ -276,16 +286,16 @@ def undefined_students():
                 if mark == "":
                     session['is-error'] = True
                     return redirect('/lk/undefined_students')
-                student_id = db.session.query(system_vars.Student).filter_by(name=student_name).first_or_404().id
-                photo_id = len(list(paths.list_images(system_vars.APP_ROOT + 'static/faces/' + str(id)))) + 1
+                student_id = db.session.query(Student).filter_by(name=student_name).first_or_404().id
+                photo_id = len(list(paths.list_images(APP_ROOT + 'static/faces/' + str(id)))) + 1
                 interlayer.put_mark_direct(student_id, mark == "+")
-                os.replace(system_vars.APP_ROOT + 'static/undefined_image_cache/' + file_id + ext,
-                           system_vars.APP_ROOT + 'static/faces/' + str(student_id) + '/' + str(photo_id) + ext)
+                os.replace(APP_ROOT + f'static/undefined_image_cache/{teacher_id}/' + file_id + ext,
+                           APP_ROOT + 'static/faces/' + str(student_id) + '/' + str(photo_id) + ext)
             else:
-                os.remove(system_vars.APP_ROOT + 'static/undefined_image_cache/' + file_id + ext)
+                os.remove(APP_ROOT + f'static/undefined_image_cache/{teacher_id}/' + file_id + ext)
         return redirect('/lk')
 
-    queries = db.session.query(system_vars.Student).filter_by(teacher_id=teacher_id).all()
+    queries = db.session.query(Student).filter_by(teacher_id=teacher_id).all()
     names_list = []
     for q in queries:
         names_list.append(q.name)
@@ -313,7 +323,7 @@ def data_results(filter):
 
     error = None
 
-    student_list = db.session.query(system_vars.Student).filter_by(teacher_id=teacher_id).all()
+    student_list = db.session.query(Student).filter_by(teacher_id=teacher_id).all()
     all_student_names = []
 
     for student in student_list:
@@ -351,7 +361,7 @@ def data_results(filter):
         return 404
 
     name, grade, min_date = params[0], int(params[1]), int(params[2])
-    query = db.session.query(system_vars.Mark, system_vars.Student).join(system_vars.Student).filter(system_vars.Mark.date >= min_date)
+    query = db.session.query(Mark, Student).join(Student).filter(Mark.date >= min_date)
 
     query = query.filter_by(teacher_id=teacher_id)
 
@@ -407,7 +417,7 @@ def delete_all():
     if teacher_id is None:
         return redirect('/error_no_access')
     if request.method == 'POST':
-        to_delete_list = db.session.query(system_vars.Mark, system_vars.Student).join(system_vars.Student).filter(system_vars.Student.teacher_id == teacher_id).all()
+        to_delete_list = db.session.query(Mark, Student).join(Student).filter(Student.teacher_id == teacher_id).all()
         for mark, student in to_delete_list:
             db.session.delete(mark)
         db.session.commit()
@@ -421,8 +431,8 @@ def edit_photo(student_id):
     if teacher_id is None:
         return redirect('/error_no_access')
 
-    name = db.session.get(system_vars.Student, student_id).name
-    path_list = list(paths.list_images(system_vars.APP_ROOT + f'static/faces/{student_id}/'))
+    name = db.session.get(Student, student_id).name
+    path_list = list(paths.list_images(APP_ROOT + f'static/faces/{student_id}/'))
     files_list = []
 
     for p in path_list:
@@ -433,7 +443,7 @@ def edit_photo(student_id):
         for path in files_list:
             is_deleted = request.form.get(path)
             if is_deleted is not None:
-                os.remove(system_vars.APP_ROOT + 'static/' + path)
+                os.remove(APP_ROOT + path)
         return redirect(f'/lk/edit_student_photo/student_id={student_id}')
 
     return render_template('edit_photo.html', name=name, files_list=files_list,
@@ -446,7 +456,7 @@ def add_photo(student_id):
     if teacher_id is None:
         return redirect('/error_no_access')
     photo_list = []
-    name = db.session.get(system_vars.Student, student_id).name
+    name = db.session.get(Student, student_id).name
 
     def form_photo_list():
         photo_list.clear()
@@ -457,10 +467,10 @@ def add_photo(student_id):
     form_photo_list()
 
     if request.method == "POST":
-        if 'add_photo' in request.form:
+        if 'add_student' in request.form:
             for photo in request.files:
                 request.files[photo].save(
-                    os.path.join(system_vars.APP_ROOT + 'static/faces/' + str(student_id),
+                    os.path.join(APP_ROOT + 'static/faces/' + str(student_id),
                                  secure_filename(request.files[photo].filename)))
             return redirect(f'/lk/edit_student_photo/student_id={student_id}')
         elif 'increase_photo_num' in request.form:
@@ -479,7 +489,7 @@ def edit_student(student_id):
     if teacher_id is None:
         return redirect('/error_no_access')
 
-    student = db.session.get(system_vars.Student, student_id)
+    student = db.session.get(Student, student_id)
 
     if request.method == 'POST':
         student.name = request.form["surname"] + " " + request.form["name"] + " " + request.form["patronymic"]
@@ -493,9 +503,9 @@ def edit_student(student_id):
 
 
 def init_before_requests():
-    open(system_vars.APP_ROOT + 'log/error.log', "w").close()
+    open(APP_ROOT + 'log/error.log', "w").close()
     with app.app_context():
-        teachers_size = db.session.query(system_vars.Teacher).count() 
+        teachers_size = db.session.query(Teacher).count() 
     for i in range(teachers_size):
         interlayer.create_teacher(i)
     
