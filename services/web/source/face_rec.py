@@ -1,12 +1,8 @@
 from imutils import paths
 import face_recognition
 import pickle, cv2, os, time
-from funcs import write_to_log
-import configparser
-
-parser = configparser.ConfigParser()
-parser.read('config.ini')
-APP_ROOT = parser['path']['root']
+from source.funcs import write_to_log
+from source.reader import APP_ROOT
 
 def clear_file(fileName):
     f = open(fileName, "wb+")

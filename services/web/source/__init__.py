@@ -1,23 +1,19 @@
-import os, shutil, strings, configparser
-import interlayer
+import os, shutil
+import source.strings as strings
+import source.interlayer as interlayer
 from imutils import paths
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
-from system import *
+from source.system import *
 from datetime import timedelta
 
 from flask import render_template, request, redirect, session, g, url_for
 from sqlalchemy import exc, func
-from funcs import *
+from source.funcs import *
 import cv2
+from source.reader import APP_ROOT, SESSION_DUR
 
 PHOTO_SIZE_CONST = 1
-
-parser = configparser.ConfigParser()
-parser.read('config.ini')
-
-APP_ROOT = parser['path']['root']
-SESSION_DUR = int(parser['session']['time'])
 
 def update(t_id):
     interlayer.recount(t_id)

@@ -1,17 +1,14 @@
 import pytz, os
-import face_rec
-from system import *
-import configparser
-
-parser = configparser.ConfigParser()
-parser.read('config.ini')
-APP_ROOT = parser['path']['root']
+import source.face_rec as face_rec
+from source.system import *
+from source.reader import APP_ROOT
+import source.funcs as funcs
 
 tz = pytz.timezone('Europe/Moscow')
 
 def create_teacher(teacher_id):
     open(f"{APP_ROOT}encs/face_enc_{teacher_id}", 'a').close()
-    os.system(f"mkdir {APP_ROOT}undefined_image_cache/{teacher_id}/")
+    os.system(f"mkdir {APP_ROOT}static/undefined_image_cache/{teacher_id}/")
 
 def put_mark(mark_data):
     new_id = Mark.query.count()

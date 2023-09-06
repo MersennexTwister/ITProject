@@ -1,0 +1,7 @@
+opencv-python-headless
+imutils
+werkzeug
+datetime
+sqlalchemy
+flask_sqlalchemy
+gunicorn

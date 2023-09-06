@@ -1,11 +1,10 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 import pytz, datetime
-import funcs
 
 app = Flask(__name__)
 app.secret_key = '28bee993c5553ec59b3c051d535760198f6f018ed1cca1ddadcdb570352ef05b'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mars.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////usr/src/mars/source/instance/mars.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 20000000
 db = SQLAlchemy(app)

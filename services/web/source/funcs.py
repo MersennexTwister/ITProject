@@ -1,7 +1,7 @@
-import system
+from source.reader import APP_ROOT
 
 def write_to_log(info):
-    log = open(system.APP_ROOT + "log/error.log", "a")
+    log = open(APP_ROOT + "log/error.log", "a")
     log.write(info + '\n\n')
     log.close()
 
