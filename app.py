@@ -109,7 +109,7 @@ def ident():
         res, tid = auth(login, password)
         name = ""
         if res == 2:
-            name = db.session.get(Student, tid).name
+            name = db.session.get(Teacher, tid).name
 
         return { "is": res, "name": name }
     
