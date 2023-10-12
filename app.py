@@ -107,8 +107,11 @@ def ident():
         login = request.form['login']
         password = request.form['password']
         res, tid = auth(login, password)
+        name = ""
+        if res == 2:
+            name = db.session.get(Student, tid).name
 
-        return { "is": res, "id": tid }
+        return { "is": res, "name": name }
     
     return render_template('login.html', error=None)
 
@@ -248,7 +251,7 @@ def put_mark():
         res, teacher_id = auth(login, password)
 
         if res < 2:
-            return { "is": -1, "name": "" }
+            return { "is": 0, "name": "" }
 
         UPLOAD_FOLD = 'site_image_cache'
         UPLOAD_FOLDER = os.path.join(APP_ROOT, UPLOAD_FOLD)
@@ -262,7 +265,7 @@ def put_mark():
             UPLOAD_FOLD = f'static/undefined_image_cache/{teacher_id}/'
             cnt = len(list(paths.list_images(APP_ROOT + UPLOAD_FOLD))) + 1
             os.replace(APP_ROOT + 'site_image_cache/1.png', APP_ROOT + UPLOAD_FOLD + str(cnt) + '.png')
-            return { "is": 0, "name": "" }
+            return { "is": 1, "name": "" }
         else:
             os.remove(APP_ROOT + 'site_image_cache/1.png')
 
