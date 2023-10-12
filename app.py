@@ -1,22 +1,32 @@
 import os, shutil
-import source.strings as strings
-import source.interlayer as interlayer
+import strings as strings
+import interlayer as interlayer
 from imutils import paths
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
-from source.system import *
+from system import *
 from datetime import timedelta
 
 from flask import render_template, request, redirect, session, g, url_for
 from sqlalchemy import exc, func
-from source.funcs import *
+from funcs import *
 import cv2
-from source.reader import APP_ROOT, SESSION_DUR
+from reader import APP_ROOT, SESSION_DUR
 
 PHOTO_SIZE_CONST = 1
 
 def update(t_id):
     interlayer.recount(t_id)
+
+def auth(login, password):
+    teacher = db.session.query(Teacher).filter_by(login=login).all()
+
+    if len(teacher) == 0:
+        return 0, -1
+    elif not check_password_hash(teacher[0].psw, password):
+        return 1, -1
+    else:
+        return 2, teacher[0].id
 
 
 @app.before_request
@@ -90,6 +100,18 @@ def register():
 
     return render_template("register.html", error=error)
 
+@app.route('/ident100500', methods=["POST", "GET"])
+def ident():
+
+    if request.method == "POST":
+        login = request.form['login']
+        password = request.form['password']
+        res, tid = auth(login, password)
+
+        return { "is": res, "id": tid }
+    
+    return render_template('login.html', error=None)
+
 
 @app.route('/login', methods=["POST", "GET"])
 def login():
@@ -98,15 +120,15 @@ def login():
     if request.method == "POST":
         login = request.form['login']
         password = request.form['password']
-        teacher = db.session.query(Teacher).filter_by(login=login).all()
+        res, tid = auth(login, password)
 
-        if len(teacher) == 0:
+        if res == 0:
             error = strings.incorrect_login
-        elif not check_password_hash(teacher[0].psw, password):
+        elif res == 1:
             error = strings.incorrect_password
 
         if error is None:
-            session['user_id'] = teacher[0].id
+            session['user_id'] = tid
             session['add_student_photo_num'] = 3
             session['edit_student_photo_num'] = 3
             return redirect('/lk')
@@ -209,26 +231,24 @@ def delete_student(student_id):
     return render_template('delete_student.html', name=name)
 
 
-@app.route('/lk/success_page/student_id=<int:st_id>')
-def success_page(st_id):
-    name = db.session.get(Student, st_id).name
-    return render_template('success_page.html', name=name)
-
-
 @app.route('/lk/error_recognise')
 def error_recognise():
     return render_template('error_recognise.html')
 
 
-@app.route('/lk/put_mark', methods=['POST', 'GET'])
+@app.route('/put_mark100500', methods=['POST', 'GET'])
 def put_mark():
-    teacher_id = session.get('user_id')
-    if teacher_id is None:
-        return redirect('/error_no_access')
 
     if request.method == 'POST':
         photo = request.files['photo']
         mark = request.form['mark']
+        login = request.form['login']
+        password = request.form['password']
+
+        res, teacher_id = auth(login, password)
+
+        if res < 2:
+            return { "is": -1, "name": "" }
 
         UPLOAD_FOLD = 'site_image_cache'
         UPLOAD_FOLDER = os.path.join(APP_ROOT, UPLOAD_FOLD)
@@ -242,10 +262,12 @@ def put_mark():
             UPLOAD_FOLD = f'static/undefined_image_cache/{teacher_id}/'
             cnt = len(list(paths.list_images(APP_ROOT + UPLOAD_FOLD))) + 1
             os.replace(APP_ROOT + 'site_image_cache/1.png', APP_ROOT + UPLOAD_FOLD + str(cnt) + '.png')
-            return redirect('/lk/error_recognise')
+            return { "is": 0, "name": "" }
         else:
             os.remove(APP_ROOT + 'site_image_cache/1.png')
-        return redirect('/lk/success_page/student_id=' + str(face))
+
+        name = db.session.get(Student, face).name
+        return { "is": 1, "name": name }
 
     return render_template('put_mark.html')
 

@@ -1,8 +1,8 @@
 import pytz, os
-import source.face_rec as face_rec
-from source.system import *
-from source.reader import APP_ROOT
-import source.funcs as funcs
+import face_rec as face_rec
+from system import *
+from reader import APP_ROOT
+import funcs as funcs
 
 tz = pytz.timezone('Europe/Moscow')
 

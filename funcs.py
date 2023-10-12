@@ -1,4 +1,4 @@
-from source.reader import APP_ROOT
+from reader import APP_ROOT
 
 def write_to_log(info):
     log = open(APP_ROOT + "log/error.log", "a")
