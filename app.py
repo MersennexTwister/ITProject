@@ -198,7 +198,7 @@ def add_student():
             new_id = 1
 
         UPLOAD_FOLD = 'static/faces/' + str(new_id)
-        os.system(f"mkdir {APP_ROOT}{UPLOAD_FOLD}")
+        os.mkdir(f"{APP_ROOT}{UPLOAD_FOLD}")
 
         for photo in request.files:
             request.files[photo].save(
@@ -464,7 +464,7 @@ def edit_photo(student_id):
         for path in files_list:
             is_deleted = request.form.get(path)
             if is_deleted is not None:
-                os.remove(APP_ROOT + path)
+                os.remove(APP_ROOT + 'static/' + path)
         return redirect(f'/lk/edit_student_photo/student_id={student_id}')
 
     return render_template('edit_photo.html', name=name, files_list=files_list,

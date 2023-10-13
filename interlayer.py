@@ -8,7 +8,7 @@ tz = pytz.timezone('Europe/Moscow')
 
 def create_teacher(teacher_id):
     open(f"{APP_ROOT}encs/face_enc_{teacher_id}", 'a').close()
-    os.system(f"mkdir {APP_ROOT}static/undefined_image_cache/{teacher_id}/")
+    os.mkdir(f"{APP_ROOT}static/undefined_image_cache/{teacher_id}/")
 
 def put_mark(mark_data):
     new_id = Mark.query.count()
