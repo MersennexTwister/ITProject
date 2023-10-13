@@ -270,7 +270,7 @@ def put_mark():
             os.remove(APP_ROOT + 'site_image_cache/1.png')
 
         name = db.session.get(Student, face).name
-        return { "is": 1, "name": name }
+        return { "is": 2, "name": name }
 
     return render_template('put_mark.html')
 
