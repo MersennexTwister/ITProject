@@ -1,0 +1,5 @@
+pytz
+imutils
+opencv-python
+flask
+flask_sqlalchemy

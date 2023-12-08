@@ -18,16 +18,6 @@ PHOTO_SIZE_CONST = 1
 def update(t_id):
     interlayer.recount(t_id)
 
-def auth(login, password):
-    teacher = db.session.query(Teacher).filter_by(login=login).all()
-
-    if len(teacher) == 0:
-        return 0, -1
-    elif not check_password_hash(teacher[0].psw, password):
-        return 1, -1
-    else:
-        return 2, teacher[0].id
-
 
 @app.before_request
 def load_logged_in_user():
@@ -91,8 +81,6 @@ def register():
                 return render_template("register.html", error=error)
             except:
                 return redirect('/error_register')
-            UPLOAD_FOLD = 'static/undefined_image_cache/' + str(id)
-            os.system(f"mkdir {APP_ROOT}{UPLOAD_FOLD}")
             session['user_id'] = id
             interlayer.create_teacher(id)
             return redirect('/lk')
