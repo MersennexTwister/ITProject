@@ -1,2 +1,2 @@
-APP_ROOT = '/opt/project-mars'
+APP_ROOT = '/opt/project-mars/'
 SESSION_DUR = 60
