@@ -1,7 +1,2 @@
-import configparser
-
-parser = configparser.ConfigParser()
-parser.read('config.ini')
-
-APP_ROOT = parser['root']['path']
-SESSION_DUR = int(parser['session']['time'])
+APP_ROOT = '/opt/project-mars'
+SESSION_DUR = 60
