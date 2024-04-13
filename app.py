@@ -1,28 +1,101 @@
-import os, shutil
-import strings as strings
-import interlayer as interlayer
+import os, shutil, pytz, datetime, cv2
 from imutils import paths
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
-from system import *
-from datetime import timedelta
-
-from flask import render_template, request, redirect, session, g, url_for
+from flask import Flask, render_template, request, redirect, session, g, url_for
 from sqlalchemy import exc, func
-from funcs import *
-import cv2
-from reader import APP_ROOT, SESSION_DUR
+from flask_sqlalchemy import SQLAlchemy
+
+from face_rec import *
+from utils import * 
+from settings import APP_ROOT, SESSION_DUR
+
+app = Flask(__name__)
+app.secret_key = '28bee993c5553ec59b3c051d535760198f6f018ed1cca1ddadcdb570352ef05b'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{APP_ROOT}instance/mars.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['MAX_CONTENT_LENGTH'] = 20000000
+db = SQLAlchemy(app)
+
+
+def auth(login, password):
+    teacher = db.session.query(Teacher).filter_by(login=login).all()
+
+    if len(teacher) == 0:
+        return 0, -1
+    elif not check_password_hash(teacher[0].psw, password):
+        return 1, -1
+    else:
+        return 2, teacher[0].id
+
+
+class Teacher(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50))
+    login = db.Column(db.String(50), unique=True)
+    psw = db.Column(db.String(500), unique=True)
+
+    def __repr__(self):
+        return f"<teacher {self.id}>"
+
+
+class Student(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50))
+    grade = db.Column(db.Integer)
+    teacher_id = db.Column(db.Integer, db.ForeignKey("teacher.id"))
+
+    def __repr__(self):
+        return f"<student {self.id}>"
+
+
+class Mark(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey("student.id"))
+    date = db.Column(db.Integer)
+    type = db.Column(db.Integer)
+
+    def __repr__(self):
+        return f"<mark {self.id}>"
+
+
+def create_teacher(teacher_id):
+    open(f"{APP_ROOT}encs/face_enc_{teacher_id}", 'a').close()
+    os.mkdir(f"{APP_ROOT}static/undefined_image_cache/{teacher_id}/")
+
+def put_mark(mark_data):
+    new_id = Mark.query.count()
+    new_data = Mark(id=new_id, student_id=mark_data[1], date=mark_data[0], type=(1 if (mark_data[2]) else -1))
+    db.session.add(new_data)
+    db.session.commit()
+
+def update(teacher_id):
+    id_list = []
+    our_students = db.session.query(Student).filter_by(teacher_id=teacher_id).all()
+    for student in our_students:
+        id_list.append(student.id)
+    count_faces(teacher_id, id_list)
+
+def put_mark_recognize(teacher_id, img, type):
+    face_id = recognite_the_face(teacher_id, img)
+
+    if face_id != -1:
+        dt = datetime.datetime.now(pytz.timezone('Europe/Moscow'))
+        put_mark([form_date(int(dt.day), int(dt.month), int(dt.year)), face_id, type])
+
+    return face_id
+
+def put_mark_direct(id, type):
+    dt = datetime.datetime.now(pytz.timezone('Europe/Moscow'))
+    put_mark([form_date(int(dt.day), int(dt.month), int(dt.year)), id, type])
+
 
 PHOTO_SIZE_CONST = 1
-
-def update(t_id):
-    interlayer.recount(t_id)
-
 
 @app.before_request
 def load_logged_in_user():
     session.permanent = True
-    app.permanent_session_lifetime = timedelta(minutes=SESSION_DUR)
+    app.permanent_session_lifetime = datetime.timedelta(minutes=SESSION_DUR)
     teacher_id = session.get('user_id')
     if teacher_id is None:
         g.teacher_name = None
@@ -67,7 +140,7 @@ def register():
             error = strings.fill_all_fields
 
         if not check_name(name):
-            error = strings.incorrect_symbols
+            error = 'Имя содержит недопустимые символы (& и/или -)!'
 
         if error is None:
             try:
@@ -77,7 +150,7 @@ def register():
                 db.session.add(new_teacher)
                 db.session.commit()
             except exc.IntegrityError:
-                error = strings.login_already_used(login)
+                error = f'Пользватель с логином "{login}" уже зарегестрирован!'
                 return render_template("register.html", error=error)
             except:
                 return redirect('/error_register')
@@ -114,9 +187,9 @@ def login():
         res, tid = auth(login, password)
 
         if res == 0:
-            error = strings.incorrect_login
+            error = 'Неверный логин!'
         elif res == 1:
-            error = strings.incorrect_password
+            error = 'Неверный пароль!'
 
         if error is None:
             session['user_id'] = tid
@@ -176,7 +249,7 @@ def add_student():
         students_size = db.session.query(Student).filter_by(name=name, teacher_id=teacher_id).count()
 
         if not check_name(name):
-            return strings.incorrect_symbols
+            return 'Имя содержит недопустимые символы (& и/или -)!'
 
         if students_size > 0:
             return strings.student_already_exists
@@ -352,10 +425,10 @@ def data_results(filter):
             try:
                 day, month, year = int(str_day), int(str_month), int(str_year)
                 if not check_date(day, month, year):
-                    error = strings.incorrect_data
+                    error = 'Вы ввели несуществующую дату!'
                 min_date = form_date(day, month, year)
             except:
-                error = strings.bad_data
+                error = 'Неправильно введена дата!'
 
         if name == 'Выберите ученика':
             name = '-'
@@ -512,7 +585,6 @@ def edit_student(student_id):
 
 
 def init_before_requests():
-    open(APP_ROOT + 'log/error.log', "w").close()
     with app.app_context():
         teachers_size = db.session.query(Teacher).count() 
     for i in range(teachers_size):

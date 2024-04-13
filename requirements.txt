@@ -1,3 +1,4 @@
+face_recognition
 pytz
 imutils
 opencv-python

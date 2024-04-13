@@ -1,9 +1,4 @@
-from reader import APP_ROOT
-
-def write_to_log(info):
-    log = open(APP_ROOT + "log/error.log", "a")
-    log.write(info + '\n\n')
-    log.close()
+from settings import APP_ROOT
 
 def add_signs(val, k):
     val = str(val)

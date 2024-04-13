@@ -1,8 +1,7 @@
 from imutils import paths
 import face_recognition
 import pickle, cv2, os, time
-from funcs import write_to_log
-from reader import APP_ROOT
+from settings import APP_ROOT
 
 def clear_file(fileName):
     f = open(fileName, "wb+")
