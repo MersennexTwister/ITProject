@@ -61,7 +61,7 @@ class Mark(db.Model):
 
 def create_teacher(teacher_id):
     open(f"{APP_ROOT}encs/face_enc_{teacher_id}", 'a').close()
-    os.mkdir(f"{APP_ROOT}static/undefined_image_cache/{teacher_id}/")
+    os.makedirs(f"{APP_ROOT}static/undefined_image_cache/{teacher_id}/", exist_ok=True)
 
 def put_mark(mark_data):
     new_id = Mark.query.count()
@@ -155,7 +155,7 @@ def register():
             except:
                 return redirect('/error_register')
             session['user_id'] = id
-            interlayer.create_teacher(id)
+            create_teacher(id)
             return redirect('/lk')
 
 
@@ -259,9 +259,10 @@ def add_student():
             new_id = 1
 
         UPLOAD_FOLD = 'static/faces/' + str(new_id)
-        os.mkdir(f"{APP_ROOT}{UPLOAD_FOLD}")
+        os.makedirs(f"{APP_ROOT}{UPLOAD_FOLD}", exist_ok=True)
 
         for photo in request.files:
+            if not request.files[photo].filename: continue
             request.files[photo].save(
                 os.path.join(APP_ROOT + UPLOAD_FOLD, secure_filename(request.files[photo].filename)))
         db.session.add(Student(id=new_id, name=name, grade=grade, teacher_id=teacher_id))
@@ -320,7 +321,7 @@ def put_mark():
 
         photo.save(APP_ROOT + 'site_image_cache/1.png')
         img = cv2.imread(APP_ROOT + "site_image_cache/1.png", cv2.IMREAD_COLOR)
-        face = interlayer.put_mark_recognize(teacher_id, img, mark == "+")
+        face = put_mark_recognize(teacher_id, img, mark == "+")
 
         if face == -1:
             UPLOAD_FOLD = f'static/undefined_image_cache/{teacher_id}/'
@@ -370,7 +371,7 @@ def undefined_students():
                     return redirect('/lk/undefined_students')
                 student_id = db.session.query(Student).filter_by(name=student_name).first_or_404().id
                 photo_id = len(list(paths.list_images(APP_ROOT + 'static/faces/' + str(id)))) + 1
-                interlayer.put_mark_direct(student_id, mark == "+")
+                put_mark_direct(student_id, mark == "+")
                 os.replace(APP_ROOT + f'static/undefined_image_cache/{teacher_id}/' + file_id + ext,
                            APP_ROOT + 'static/faces/' + str(student_id) + '/' + str(photo_id) + ext)
             else:
@@ -551,6 +552,7 @@ def add_photo(student_id):
     if request.method == "POST":
         if 'add_student' in request.form:
             for photo in request.files:
+                if not request.files[photo].filename: continue
                 request.files[photo].save(
                     os.path.join(APP_ROOT + 'static/faces/' + str(student_id),
                                  secure_filename(request.files[photo].filename)))
@@ -588,7 +590,7 @@ def init_before_requests():
     with app.app_context():
         teachers_size = db.session.query(Teacher).count() 
     for i in range(teachers_size):
-        interlayer.create_teacher(i)
+        create_teacher(i)
     
 
 init_before_requests()
