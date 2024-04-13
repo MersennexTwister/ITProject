@@ -29,7 +29,7 @@
 Если вы ставите систему на Ubuntu, можете воспользоваться скриптом быстрой установки
 
 ```console
-$ wget -O auto.sh "https://github.com/MersennexTwister/project-mars/raw/main/auto.sh"
+$ wget -O auto.sh "https://raw.githubusercontent.com/MersennexTwister/project-mars/main/auto.sh"
 $ chmod +x auto.sh
 $ sudo ./auto.sh
 ```
