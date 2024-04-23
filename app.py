@@ -162,7 +162,7 @@ def register():
     return render_template("register.html", error=error)
 
 @app.route('/ident100500', methods=["POST", "GET"])
-def ident():
+def ident_url():
 
     if request.method == "POST":
         login = request.form['login']
@@ -302,7 +302,7 @@ def error_recognise():
 
 
 @app.route('/put_mark100500', methods=['POST', 'GET'])
-def put_mark():
+def put_mark_url():
 
     if request.method == 'POST':
         photo = request.files['photo']
